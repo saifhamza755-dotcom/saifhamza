@@ -1,0 +1,75 @@
+/* Theme refinement: softer workspace backgrounds and clearer button hierarchy. */
+body{background:#eaf1f8!important}
+.main{background:linear-gradient(145deg,#f7fbff 0%,#edf4fa 52%,#e6eff8 100%);min-height:100vh}
+.content{background:radial-gradient(circle at 12% 5%,rgba(85,153,214,.12),transparent 26%),radial-gradient(circle at 85% 90%,rgba(20,124,131,.08),transparent 28%)}
+.topbar{background:rgba(248,252,255,.94);border-bottom:1px solid #dbe8f3}
+.card{background:rgba(255,255,255,.92);border-color:#cddfeb;box-shadow:0 14px 30px rgba(24,65,105,.09)}
+.stat{background:linear-gradient(145deg,#ffffff,#f1f7fd);border-color:#cfe0ee}
+.table-wrap{background:#fff;border-color:#caddeb}.table th{background:#eaf3fb;color:#34516d}.toolbar{background:rgba(230,240,249,.78);border-color:#c9ddea}
+.btn-primary{background:linear-gradient(135deg,#146fc4,#0b579f);border-color:#0b579f;box-shadow:0 5px 12px rgba(18,97,175,.18)}
+.btn-secondary{background:#fff;border-color:#8fb5d7;color:#174f89;box-shadow:0 3px 8px rgba(27,82,135,.06)}.btn-secondary:hover{background:#eaf5ff;border-color:#2878bf}
+.btn-light{background:#dcecf9;color:#123f69;border:1px solid #b9d5ee}
+.btn-success{background:linear-gradient(135deg,#159276,#0f6d62);border-color:#0f6d62}.btn-danger{background:linear-gradient(135deg,#c95764,#a93848);border-color:#a93848}
+.badge{font-weight:700;box-shadow:0 1px 2px rgba(29,63,95,.08)}
+
+/* عناصر التفاعل والعرض */
+.sidebar{border-left:1px solid rgba(188,220,244,.14)}
+.brand{background:linear-gradient(135deg,rgba(37,116,192,.15),rgba(8,35,63,.08));border-radius:14px;padding:14px 12px 20px}
+.nav-btn{position:relative}.nav-btn.active:after{content:'';position:absolute;right:-15px;width:4px;height:26px;border-radius:8px;background:#f1bd4e}
+.nav-btn:hover{background:rgba(93,164,219,.22)}
+.input,.select,.textarea{background:rgba(255,255,255,.96);border-color:#c5d9e9}.input:hover,.select:hover,.textarea:hover{border-color:#81afd4}
+.modal{background:linear-gradient(145deg,#fff,#f4f9fd);border-top:4px solid #176cbc}
+.modal h2{color:#123f69}.modal-backdrop{background:rgba(7,30,52,.58)}
+.table tbody tr:nth-child(even){background:rgba(244,249,253,.58)}
+.table tbody tr:hover{background:#e7f3ff!important}
+.progress{background:#dfeaf3}.progress span{box-shadow:0 0 12px rgba(34,119,192,.28)}
+.notice{box-shadow:inset 3px 0 0 rgba(31,111,188,.36)}
+.login-hero{background:linear-gradient(135deg,#0e3459,#1d679f)!important;position:relative;overflow:hidden}.login-hero:before{content:'';position:absolute;width:460px;height:460px;border:1px solid rgba(255,255,255,.14);border-radius:50%;left:-180px;top:-120px}.login-hero:after{content:'';position:absolute;width:310px;height:310px;background:rgba(212,170,67,.13);border-radius:50%;left:40px;bottom:-180px}.login-hero-inner{position:relative;z-index:1}.login-hero h1{color:#fff!important}.login-hero p{color:#d8eafa!important}.welcome-badge{background:rgba(255,255,255,.14)!important;color:#f6cb69!important;border:1px solid rgba(246,203,105,.36)}
+.login-card{box-shadow:0 22px 52px rgba(21,64,105,.16)!important}.demo-accounts{background:linear-gradient(135deg,#e8f3fc,#f7fbff)!important}.demo-chip{background:rgba(255,255,255,.88)!important}
+@media(max-width:720px){.nav-btn.active:after{right:0}.login-hero{min-height:390px}.table th,.table td{padding:10px 8px}}
+
+/* الهوية المؤسسية الحديثة: بني قهوي وذهبي هادئ */
+:root{--navy:#3a2418;--blue:#8a5637;--blue2:#b67b4c;--bg:#f7f3ee;--card:#fffdfa;--text:#33231c;--muted:#78665a;--border:#e7d9cc;--green:#327358;--orange:#b87427;--red:#af4f4a;--teal:#39776f;--shadow:0 18px 42px rgba(74,45,27,.10)}
+body{background:linear-gradient(135deg,#f8f4ef 0%,#f1e8de 100%)!important;color:var(--text)}
+.main{background:radial-gradient(circle at 92% 4%,rgba(194,145,94,.12),transparent 25%),linear-gradient(145deg,#fbf8f4,#f3ebe3 58%,#eee2d6)!important}
+.content{background:radial-gradient(circle at 8% 8%,rgba(188,132,72,.11),transparent 25%),radial-gradient(circle at 88% 95%,rgba(88,117,92,.09),transparent 30%)}
+.sidebar{background:linear-gradient(180deg,#3d271b 0%,#563624 58%,#2f1d15 100%)!important;box-shadow:-8px 0 30px rgba(55,31,18,.18)}
+.brand{background:linear-gradient(135deg,rgba(214,165,108,.18),rgba(255,255,255,.03))!important;border-color:rgba(245,220,185,.15)}
+.brand:before{color:#f3c878!important;border-color:rgba(243,200,120,.65)!important}
+.brand p{color:#ebd4bb!important}.nav-btn{color:#f8ede1}.nav-btn:hover{background:rgba(218,166,105,.14)!important;border-color:rgba(244,214,174,.14)!important}.nav-btn.active{background:linear-gradient(90deg,#a5663e,#7e492d)!important;box-shadow:0 9px 20px rgba(23,12,6,.28)!important}.nav-btn.active:after{background:#f2c572!important}.sidebar-footer{background:rgba(255,250,242,.07)!important;border-color:rgba(255,231,202,.14)!important}
+.topbar{background:rgba(255,253,250,.88)!important;border-color:#eaded3!important}.topbar h1,.section-title h2,.section-title h3{color:#44291b!important}
+.card{background:rgba(255,253,250,.92)!important;border-color:#e9ddd2!important;box-shadow:0 15px 35px rgba(74,45,27,.09)!important}.card:hover{box-shadow:0 20px 42px rgba(74,45,27,.13)!important}.stat{background:linear-gradient(145deg,#fffdfa,#f8eee4)!important;border-color:#eadace!important}.stat:after{background:#f2dfcb!important}.stat .value{color:#8a5637!important}
+.btn{border-radius:11px!important;letter-spacing:.05px}.btn-primary{background:linear-gradient(135deg,#9b603b,#744027)!important;border-color:#744027!important;box-shadow:0 7px 15px rgba(116,64,39,.2)!important}.btn-primary:hover{background:linear-gradient(135deg,#ae7148,#844b2d)!important}.btn-secondary{background:#fffaf4!important;color:#784426!important;border-color:#cfae91!important}.btn-secondary:hover{background:#f5e7d8!important;border-color:#a96c42!important}.btn-light{background:#f1e4d7!important;color:#5a3523!important;border-color:#dfc4ad!important}.btn-success{background:linear-gradient(135deg,#4a8b68,#2f6950)!important}.btn-danger{background:linear-gradient(135deg,#c2675f,#a44b46)!important}
+.input,.select,.textarea{background:#fffdfb!important;border-color:#decbb9!important;color:#39261c!important}.input:hover,.select:hover,.textarea:hover{border-color:#bd865d!important}.input:focus,.select:focus,.textarea:focus{border-color:#995b37!important;box-shadow:0 0 0 3px rgba(153,91,55,.13)!important}.field label{color:#5b3a27!important}
+.password-field{position:relative}.password-field .input{padding-left:46px}.password-toggle{position:absolute;left:10px;bottom:9px;width:32px;height:32px;border:0;border-radius:9px;background:transparent;color:#7a4d35;font-size:20px;line-height:1;cursor:pointer}.password-toggle:hover{background:#f3e4d8;color:#542d1c}.password-toggle:focus{outline:3px solid rgba(153,91,55,.22)}
+.toolbar{background:rgba(246,235,224,.78)!important;border-color:#e4d0bd!important}.table-wrap{border-color:#e8d9cb!important}.table th{background:#f5eadf!important;color:#715545!important}.table tbody tr:nth-child(even){background:rgba(252,247,241,.72)!important}.table tbody tr:hover{background:#f4e4d4!important}.table th,.table td{border-color:#eee2d7!important}
+.badge-green{background:#e4f1e8!important;color:#276346!important}.badge-orange{background:#fff0d9!important;color:#98601c!important}.badge-red{background:#fbe8e6!important;color:#a4423f!important}.badge-blue{background:#f1e5db!important;color:#804923!important}.progress{background:#eaded3!important}.progress span{background:linear-gradient(90deg,#9c603a,#d19a64)!important;box-shadow:0 0 12px rgba(156,96,58,.24)!important}.notice{box-shadow:inset 4px 0 0 rgba(159,100,58,.4)!important}.notice-info{background:#f9f0e7!important;border-color:#e3c8ae!important}.notice-warn{background:#fff7e9!important;border-color:#efd49f!important}.notice-danger{background:#fff0ef!important}
+.modal{background:linear-gradient(145deg,#fffdfa,#f8eee5)!important;border-top-color:#a4653e!important}.modal h2{color:#573521!important}.modal-backdrop{background:rgba(48,28,17,.58)!important}
+.login-form-side{background:linear-gradient(145deg,#fffdfb,#f4ece4)!important}.login-hero{background:radial-gradient(circle at 14% 17%,#b77947 0,transparent 35%),linear-gradient(135deg,#3b2519,#6a3f26)!important}.login-hero:after{background:rgba(244,201,123,.15)!important}.welcome-badge{color:#f8d184!important;border-color:rgba(248,209,132,.42)!important}.login-hero p{color:#f0dfcf!important}.welcome-points div{background:rgba(255,249,242,.10)!important;border-color:rgba(255,236,214,.15)!important}.welcome-points b{color:#f6c87d!important}.welcome-footer{color:#e9c9aa!important}.login-card{box-shadow:0 26px 56px rgba(79,45,25,.15)!important}.demo-accounts{background:linear-gradient(135deg,#f6eadf,#fffaf5)!important;border-color:#ead3bc!important}.demo-chip{background:rgba(255,253,250,.94)!important;border-color:#e2cdb9!important}.demo-chip:hover{border-color:#b9784c!important;box-shadow:0 8px 16px rgba(102,58,32,.12)!important}
+@media(max-width:720px){.sidebar{box-shadow:none}.topbar{background:#fffdfa!important}}
+
+/* Welcome experience: institutional landing layer */
+.login-page{background:#f3e9df;gap:0;position:relative;isolation:isolate}
+.login-page:before{content:'';position:absolute;inset:18px;border:1px solid rgba(143,91,55,.13);border-radius:30px;pointer-events:none;z-index:2}
+.login-hero{padding:clamp(42px,7vw,92px)!important;min-height:100vh!important}
+.login-hero-inner{max-width:650px!important}
+.login-hero-inner:after{content:'منصة وطنية تساعد الجامعات والكليات على قياس الأداء، توثيق الأدلة، متابعة التحسين، واتخاذ قرارات الاعتماد بثقة وشفافية.';display:block;margin-top:28px;padding:18px 20px;border:1px solid rgba(248,221,190,.22);border-radius:18px;background:rgba(40,21,12,.18);color:#f7e4d2;font-size:14px;line-height:1.9;backdrop-filter:blur(10px);max-width:560px}
+.welcome-badge{font-size:13px!important;letter-spacing:.04em;box-shadow:0 10px 24px rgba(50,25,12,.16)}
+.login-hero h1{font-size:clamp(34px,4vw,54px)!important;letter-spacing:-.04em;text-shadow:0 4px 20px rgba(40,20,10,.18)}
+.welcome-points{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px!important}
+.welcome-points div{min-height:86px;display:flex!important;flex-direction:column;align-items:flex-start!important;justify-content:center;gap:6px!important;padding:15px!important;box-shadow:0 10px 20px rgba(43,22,11,.08)}
+.welcome-points b{font-size:12px!important;opacity:.85}
+.welcome-points span{font-size:13px;line-height:1.6}
+.welcome-footer{border-top:1px solid rgba(255,235,213,.2);padding-top:18px}
+.login-form-side{position:relative;padding:clamp(28px,6vw,76px)!important}
+.login-form-side:before{content:'بوابة الدخول الآمن';position:absolute;top:34px;right:clamp(28px,6vw,76px);color:#8d5738;font-size:13px;font-weight:700;letter-spacing:.06em}
+.login-card{position:relative;width:min(560px,100%)!important;border-radius:26px!important;padding:clamp(26px,4vw,42px)!important;border-color:#ead4c1!important}
+.login-card:before{content:'YQ';display:grid;place-items:center;width:54px;height:54px;margin:0 auto 15px;border-radius:17px;background:linear-gradient(135deg,#a96942,#6e3b26);color:#ffe4bc;font-size:22px;font-weight:800;box-shadow:0 12px 22px rgba(91,48,28,.2)}
+.login-card h2{font-size:30px!important;color:#51301f!important}
+.login-card>p{font-size:15px}
+.demo-accounts{border-radius:18px!important;padding:17px!important}
+.demo-accounts>b{font-size:14px;color:#633b25}
+.demo-grid{gap:10px!important}
+.demo-chip{padding:11px 9px!important;transition:transform .2s ease,box-shadow .2s ease}
+.demo-chip:hover{transform:translateY(-2px)}
+@media(max-width:900px){.login-page:before{inset:8px}.login-hero{min-height:auto!important}.welcome-points{grid-template-columns:1fr!important}.login-form-side:before{top:18px}.login-form-side{padding-top:58px!important}}
