@@ -11,6 +11,7 @@ use App\Http\Controllers\ImprovementPlanController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlatformAccreditationController;
+use App\Http\Controllers\PlatformAccountRequestController;
 use App\Http\Controllers\PlatformActivityController;
 use App\Http\Controllers\PlatformAssessmentController;
 use App\Http\Controllers\PlatformController;
@@ -39,6 +40,8 @@ Route::delete('/platform/session', [PlatformSessionController::class, 'destroy']
 Route::get('/platform/logout', [PlatformSessionController::class, 'destroyPage'])->name('platform.session.destroy-page');
 
 Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(function () {
+    Route::post('/account-requests', [PlatformAccountRequestController::class, 'store'])->withoutMiddleware('auth')->name('account-requests.store');
+    Route::get('/account-requests', [PlatformAccountRequestController::class, 'index'])->name('account-requests.index');
     Route::get('/directory', [PlatformDirectoryController::class, 'index'])->name('directory');
     Route::middleware('permission:users.manage')->group(function () {
         Route::post('/users', [PlatformDirectoryController::class, 'storeUser'])->name('users.store');

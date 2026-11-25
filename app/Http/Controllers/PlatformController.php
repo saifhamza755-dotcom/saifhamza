@@ -41,6 +41,7 @@ class PlatformController extends Controller
                 'accreditationUrl' => url('/platform/api/accreditation-requests'),
                 'reportsUrl' => url('/platform/api/reports'),
                 'activityUrl' => url('/platform/api/activity'),
+                'accountRequestsUrl' => url('/platform/api/account-requests'),
                 'csrfToken' => csrf_token(),
             ],
         ]);
