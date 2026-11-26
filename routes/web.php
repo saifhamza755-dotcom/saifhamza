@@ -19,6 +19,7 @@ use App\Http\Controllers\PlatformDirectoryController;
 use App\Http\Controllers\PlatformEvaluationTeamController;
 use App\Http\Controllers\PlatformExternalEvaluationController;
 use App\Http\Controllers\PlatformImprovementController;
+use App\Http\Controllers\PlatformProfileController;
 use App\Http\Controllers\PlatformQualityController;
 use App\Http\Controllers\PlatformReportController;
 use App\Http\Controllers\PlatformSessionController;
@@ -40,6 +41,8 @@ Route::delete('/platform/session', [PlatformSessionController::class, 'destroy']
 Route::get('/platform/logout', [PlatformSessionController::class, 'destroyPage'])->name('platform.session.destroy-page');
 
 Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(function () {
+    Route::put('/profile', [PlatformProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [PlatformProfileController::class, 'updatePassword'])->name('profile.password');
     Route::post('/account-requests', [PlatformAccountRequestController::class, 'store'])->withoutMiddleware('auth')->name('account-requests.store');
     Route::get('/account-requests', [PlatformAccountRequestController::class, 'index'])->name('account-requests.index');
     Route::get('/directory', [PlatformDirectoryController::class, 'index'])->name('directory');
