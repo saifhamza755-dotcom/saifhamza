@@ -10,8 +10,8 @@ use App\Http\Controllers\ExternalEvaluationController;
 use App\Http\Controllers\ImprovementPlanController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\PlatformAccreditationController;
 use App\Http\Controllers\PlatformAccountRequestController;
+use App\Http\Controllers\PlatformAccreditationController;
 use App\Http\Controllers\PlatformActivityController;
 use App\Http\Controllers\PlatformAssessmentController;
 use App\Http\Controllers\PlatformController;
@@ -44,6 +44,8 @@ Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(
     Route::get('/account-requests', [PlatformAccountRequestController::class, 'index'])->name('account-requests.index');
     Route::get('/directory', [PlatformDirectoryController::class, 'index'])->name('directory');
     Route::middleware('permission:users.manage')->group(function () {
+        Route::post('/account-requests/{accountRequest}/approve', [PlatformAccountRequestController::class, 'approve'])->name('account-requests.approve');
+        Route::post('/account-requests/{accountRequest}/reject', [PlatformAccountRequestController::class, 'reject'])->name('account-requests.reject');
         Route::post('/users', [PlatformDirectoryController::class, 'storeUser'])->name('users.store');
         Route::put('/users/{user}', [PlatformDirectoryController::class, 'updateUser'])->name('users.update');
         Route::patch('/users/{user}/status', [PlatformDirectoryController::class, 'updateUserStatus'])->name('users.status');
