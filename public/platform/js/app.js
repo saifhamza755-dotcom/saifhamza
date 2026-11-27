@@ -298,8 +298,9 @@ document.addEventListener('submit',async e=>{
   if(response.status===419){handleSessionExpiry();return;}
   const payload=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(payload.message||Object.values(payload.errors||{})[0]?.[0]||'تعذر الاتصال بالخادم. حاول مرة أخرى.');
-  user=sessionUser(payload.user);platform.user=payload.user;
-  await refreshSharedData();route='dashboard';render();
+  // اعرض لوحة الحساب فوراً من البيانات المحلية؛ فتعطل طلب ثانوي لا يعيد المستخدم إلى صفحة دخول فارغة.
+  user=sessionUser(payload.user);platform.user=payload.user;route='dashboard';render();
+  refreshSharedData().then(render).catch(err=>toast('تم تسجيل الدخول، لكن تعذر تحديث بعض البيانات: '+(err.message||'خطأ اتصال')));
  }catch(err){fail(err.message||'تعذر تسجيل الدخول. تحقق من الاتصال ثم حاول مرة أخرى.');}
 },true);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action="request"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();modal('طلب حساب جديد',input('name','الاسم','','text','required')+input('email','البريد','','email','required')+select('role','الدور المطلوب',Object.entries(seed.roles).filter(([r])=>r!=='admin'))+area('note','الجامعة والكلية وجهة العمل','','required'),async f=>{await api(platform.accountRequestsUrl,{method:'POST',body:JSON.stringify(f)});toast('تم إرسال طلب الحساب إلى الإدارة');});},true);
