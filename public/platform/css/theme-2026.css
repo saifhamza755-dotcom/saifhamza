@@ -73,3 +73,26 @@ body{background:linear-gradient(135deg,#f8f4ef 0%,#f1e8de 100%)!important;color:
 .demo-chip{padding:11px 9px!important;transition:transform .2s ease,box-shadow .2s ease}
 .demo-chip:hover{transform:translateY(-2px)}
 @media(max-width:900px){.login-page:before{inset:8px}.login-hero{min-height:auto!important}.welcome-points{grid-template-columns:1fr!important}.login-form-side:before{top:18px}.login-form-side{padding-top:58px!important}}
+
+/* تجربة الهاتف: تبقى مقدمة المنصة ظاهرة أولًا ثم يصل الزائر إلى الدخول بالسحب للأسفل. */
+.welcome-scroll{display:none}
+@media(max-width:1000px){
+  .login-page{display:block!important;min-height:100svh}
+  .login-hero{display:flex!important;min-height:92svh!important;padding:clamp(34px,10vw,58px) clamp(22px,7vw,42px)!important}
+  .login-hero-inner{width:100%;max-width:620px!important}
+  .login-form-side{min-height:100svh;padding:64px 22px 42px!important}
+  .login-form-side:before{top:26px;right:22px}
+  .welcome-scroll{display:flex;align-items:center;gap:10px;margin-top:30px;color:#f5d5b4;font-size:13px;font-weight:700}
+  .welcome-scroll span{display:grid;place-items:center;width:30px;height:30px;border:1px solid rgba(255,234,210,.38);border-radius:50%;font-size:19px;animation:welcome-bounce 1.6s ease-in-out infinite}
+}
+@media(max-width:520px){
+  .login-page:before{inset:5px;border-radius:18px}
+  .login-hero{min-height:88svh!important;padding:34px 24px!important}
+  .login-hero h1{font-size:34px!important}
+  .login-hero p{font-size:15px!important;line-height:1.9!important}
+  .welcome-points{margin-top:22px!important}
+  .welcome-points div{min-height:auto!important;padding:12px 14px!important}
+  .login-form-side{padding-right:16px!important;padding-left:16px!important}
+  .login-card{border-radius:21px!important}
+}
+@keyframes welcome-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
