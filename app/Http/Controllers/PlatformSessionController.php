@@ -32,7 +32,8 @@ class PlatformSessionController extends Controller
         $request->session()->regenerate(false);
         /** @var User $user */
         $user = $request->user();
-        $assignment = $user->activeAssignments()->with('role')->first();
+        $assignments = $user->activeAssignments()->with(['role', 'university', 'college'])->get();
+        $assignment = $assignments->first();
 
         if (! $assignment) {
             Auth::logout();
@@ -43,6 +44,8 @@ class PlatformSessionController extends Controller
                 'message' => 'لا يوجد تكليف فعال لهذا الحساب.',
             ], 403);
         }
+
+        $request->session()->put('active_assignment_id', $assignment->id);
 
         $user->forceFill(['last_login_at' => now()])->save();
         AuditLog::create([
@@ -63,6 +66,16 @@ class PlatformSessionController extends Controller
                 'universityId' => $assignment->university_id ? 'u'.$assignment->university_id : '',
                 'collegeId' => $assignment->college_id ? 'c'.$assignment->college_id : '',
                 'mustChange' => $user->must_change_password,
+                'activeAssignmentId' => $assignment->id,
+                'assignments' => $assignments->map(fn ($item) => [
+                    'id' => $item->id,
+                    'role' => $item->role->key,
+                    'roleName' => $item->role->name_ar,
+                    'universityId' => $item->university_id ? 'u'.$item->university_id : '',
+                    'universityName' => $item->university?->name_ar,
+                    'collegeId' => $item->college_id ? 'c'.$item->college_id : '',
+                    'collegeName' => $item->college?->name_ar,
+                ])->values(),
             ],
         ]);
     }

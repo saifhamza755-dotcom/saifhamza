@@ -10,7 +10,11 @@ class PlatformController extends Controller
     public function __invoke(Request $request): View
     {
         $user = $request->user();
-        $assignment = $user?->activeAssignments()->with('role')->first();
+        $assignments = $user?->activeAssignments()->with(['role', 'university', 'college'])->get() ?? collect();
+        $assignment = $assignments->first();
+        if ($assignment && ! $request->session()->has('active_assignment_id')) {
+            $request->session()->put('active_assignment_id', $assignment->id);
+        }
 
         $platformUser = $user && $assignment ? [
             'username' => $user->username,
@@ -21,6 +25,16 @@ class PlatformController extends Controller
             'universityId' => $assignment->university_id ? 'u'.$assignment->university_id : '',
             'collegeId' => $assignment->college_id ? 'c'.$assignment->college_id : '',
             'mustChange' => $user->must_change_password,
+            'activeAssignmentId' => $assignment->id,
+            'assignments' => $assignments->map(fn ($item) => [
+                'id' => $item->id,
+                'role' => $item->role->key,
+                'roleName' => $item->role->name_ar,
+                'universityId' => $item->university_id ? 'u'.$item->university_id : '',
+                'universityName' => $item->university?->name_ar,
+                'collegeId' => $item->college_id ? 'c'.$item->college_id : '',
+                'collegeName' => $item->college?->name_ar,
+            ])->values(),
         ] : null;
 
         return view('platform.index', [

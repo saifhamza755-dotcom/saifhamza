@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
 use App\Models\User;
+use App\Models\UserAssignment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -73,5 +75,73 @@ class PlatformProfileTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('current_password');
 
         $this->assertTrue(Hash::check('Demo@1234', $user->fresh()->password));
+    }
+
+    public function test_user_selects_an_owned_active_assignment(): void
+    {
+        $this->seed();
+        $user = User::where('username', 'college')->firstOrFail();
+        $collegeAssignment = $user->activeAssignments()->firstOrFail();
+        $centralAssignment = UserAssignment::create([
+            'user_id' => $user->id,
+            'role_id' => Role::where('key', 'central')->value('id'),
+            'active' => true,
+            'assigned_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->withSession(['active_assignment_id' => $collegeAssignment->id])
+            ->putJson('/platform/api/profile/assignment', [
+                'assignmentId' => $centralAssignment->id,
+            ]);
+
+        $response->assertOk()
+            ->assertSessionHas('active_assignment_id', $centralAssignment->id)
+            ->assertJsonPath('user.role', 'central')
+            ->assertJsonPath('user.activeAssignmentId', $centralAssignment->id)
+            ->assertJsonCount(2, 'user.assignments');
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $user->id,
+            'action' => 'profile.assignment_selected',
+        ]);
+    }
+
+    public function test_user_cannot_select_another_users_assignment(): void
+    {
+        $this->seed();
+        $user = User::where('username', 'college')->firstOrFail();
+        $otherAssignment = User::where('username', 'central')
+            ->firstOrFail()
+            ->activeAssignments()
+            ->firstOrFail();
+
+        $this->actingAs($user)->putJson('/platform/api/profile/assignment', [
+            'assignmentId' => $otherAssignment->id,
+        ])->assertNotFound();
+    }
+
+    public function test_selected_assignment_controls_role_permissions(): void
+    {
+        $this->seed();
+        $user = User::where('username', 'college')->firstOrFail();
+        $collegeAssignment = $user->activeAssignments()->firstOrFail();
+        $centralAssignment = UserAssignment::create([
+            'user_id' => $user->id,
+            'role_id' => Role::where('key', 'central')->value('id'),
+            'active' => true,
+            'assigned_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['active_assignment_id' => $collegeAssignment->id])
+            ->postJson('/platform/api/quality/versions', [])
+            ->assertForbidden();
+
+        $this->putJson('/platform/api/profile/assignment', [
+            'assignmentId' => $centralAssignment->id,
+        ])->assertOk();
+
+        $this->postJson('/platform/api/quality/versions', [])
+            ->assertUnprocessable();
     }
 }

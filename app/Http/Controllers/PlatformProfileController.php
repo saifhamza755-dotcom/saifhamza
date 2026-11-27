@@ -50,9 +50,28 @@ class PlatformProfileController extends Controller
         ]);
     }
 
+    public function selectAssignment(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'assignmentId' => ['required', 'integer'],
+        ]);
+        /** @var User $user */
+        $user = $request->user();
+        $assignment = $user->activeAssignments()->whereKey($data['assignmentId'])->firstOrFail();
+
+        $request->session()->put('active_assignment_id', $assignment->id);
+        $this->audit($request, 'profile.assignment_selected', $user);
+
+        return response()->json([
+            'user' => $this->userData($user->fresh()),
+            'message' => 'تم تغيير التكليف الفعّال.',
+        ]);
+    }
+
     private function userData(User $user): array
     {
-        $assignment = $user->activeAssignments()->with('role')->firstOrFail();
+        $assignments = $user->activeAssignments()->with(['role', 'university', 'college'])->get();
+        $assignment = $assignments->firstOrFail();
 
         return [
             'username' => $user->username,
@@ -63,6 +82,16 @@ class PlatformProfileController extends Controller
             'universityId' => $assignment->university_id ? 'u'.$assignment->university_id : '',
             'collegeId' => $assignment->college_id ? 'c'.$assignment->college_id : '',
             'mustChange' => $user->must_change_password,
+            'activeAssignmentId' => $assignment->id,
+            'assignments' => $assignments->map(fn ($item) => [
+                'id' => $item->id,
+                'role' => $item->role->key,
+                'roleName' => $item->role->name_ar,
+                'universityId' => $item->university_id ? 'u'.$item->university_id : '',
+                'universityName' => $item->university?->name_ar,
+                'collegeId' => $item->college_id ? 'c'.$item->college_id : '',
+                'collegeName' => $item->college?->name_ar,
+            ])->values(),
         ];
     }
 

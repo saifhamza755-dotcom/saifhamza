@@ -62,11 +62,20 @@ class User extends Authenticatable
 
     public function activeAssignments(): HasMany
     {
-        return $this->assignments()
+        $assignments = $this->assignments()
             ->where('active', true)
             ->where(function ($query) {
                 $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
             });
+
+        if ($assignmentId = $this->selectedAssignmentId()) {
+            $assignments->orderByRaw(
+                'CASE WHEN user_assignments.id = ? THEN 0 ELSE 1 END',
+                [$assignmentId]
+            );
+        }
+
+        return $assignments;
     }
 
     public function auditLogs(): HasMany
@@ -81,15 +90,48 @@ class User extends Authenticatable
 
     public function hasRole(string ...$roles): bool
     {
-        return $this->activeAssignments()
+        $assignments = $this->activeAssignments();
+        if ($assignmentId = $this->ownedSelectedAssignmentId()) {
+            $assignments->whereKey($assignmentId);
+        }
+
+        return $assignments
             ->whereHas('role', fn ($query) => $query->whereIn('key', $roles))
             ->exists();
     }
 
     public function hasPermission(string $permission): bool
     {
-        return $this->activeAssignments()
+        $assignments = $this->activeAssignments();
+        if ($assignmentId = $this->ownedSelectedAssignmentId()) {
+            $assignments->whereKey($assignmentId);
+        }
+
+        return $assignments
             ->whereHas('role.permissions', fn ($query) => $query->where('key', $permission))
             ->exists();
+    }
+
+    private function ownedSelectedAssignmentId(): ?int
+    {
+        $assignmentId = $this->selectedAssignmentId();
+        if (! $assignmentId) {
+            return null;
+        }
+
+        return $this->activeAssignments()->whereKey($assignmentId)->exists()
+            ? $assignmentId
+            : null;
+    }
+
+    private function selectedAssignmentId(): ?int
+    {
+        if (! app()->bound('request') || ! request()->hasSession()) {
+            return null;
+        }
+
+        $assignmentId = request()->session()->get('active_assignment_id');
+
+        return is_numeric($assignmentId) ? (int) $assignmentId : null;
     }
 }

@@ -44,6 +44,7 @@ Route::get('/platform/logout', [PlatformSessionController::class, 'destroyPage']
 Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(function () {
     Route::put('/profile', [PlatformProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [PlatformProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::put('/profile/assignment', [PlatformProfileController::class, 'selectAssignment'])->name('profile.assignment');
     Route::post('/account-requests', [PlatformAccountRequestController::class, 'store'])->withoutMiddleware('auth')->name('account-requests.store');
     Route::post('/password-reset-requests', [PlatformPasswordResetRequestController::class, 'store'])->withoutMiddleware('auth')->name('password-reset-requests.store');
     Route::get('/account-requests', [PlatformAccountRequestController::class, 'index'])->name('account-requests.index');
