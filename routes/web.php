@@ -65,6 +65,7 @@ Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(
     Route::middleware('permission:institutions.manage')->group(function () {
         Route::post('/institutions', [PlatformDirectoryController::class, 'storeInstitution'])->name('institutions.store');
         Route::put('/institutions/{type}/{id}', [PlatformDirectoryController::class, 'updateInstitution'])->name('institutions.update');
+        Route::patch('/college-quality-managers/{user}/college', [PlatformDirectoryController::class, 'assignCollegeQualityManager'])->name('college-quality-managers.assign');
     });
     Route::get('/quality', [PlatformQualityController::class, 'index'])->name('quality.index');
     Route::middleware('permission:standards.manage')->group(function () {

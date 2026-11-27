@@ -46,6 +46,7 @@ class PlatformController extends Controller
                 'directoryUrl' => route('platform.api.directory'),
                 'usersUrl' => url('/platform/api/users'),
                 'institutionsUrl' => url('/platform/api/institutions'),
+                'collegeQualityManagersUrl' => url('/platform/api/college-quality-managers'),
                 'qualityUrl' => url('/platform/api/quality'),
                 'assessmentsUrl' => url('/platform/api/assessments'),
                 'universityReportsUrl' => url('/platform/api/university-reports'),

@@ -188,4 +188,30 @@ class PlatformDirectoryTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors('code');
     }
+
+    public function test_university_manager_assigns_college_quality_manager_in_database(): void
+    {
+        $manager = User::where('username', 'university')->firstOrFail();
+        $collegeManager = User::where('username', 'college')->firstOrFail();
+
+        $this->actingAs($manager)
+            ->getJson(route('platform.api.directory'))
+            ->assertOk()
+            ->assertJsonFragment(['username' => 'college']);
+
+        $this->patchJson(route('platform.api.college-quality-managers.assign', $collegeManager), [
+            'collegeId' => 'c2',
+        ])->assertOk()
+            ->assertJsonPath('user.collegeId', 'c2');
+
+        $this->assertDatabaseHas('user_assignments', [
+            'user_id' => $collegeManager->id,
+            'college_id' => 2,
+            'active' => true,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'users.college_assignment_updated',
+            'target_id' => $collegeManager->id,
+        ]);
+    }
 }

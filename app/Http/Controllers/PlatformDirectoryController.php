@@ -37,6 +37,14 @@ class PlatformDirectoryController extends Controller
                     $user,
                     $request->user()->is($user) ? $request->session()->get('active_assignment_id') : null
                 ));
+        } elseif ($assignment->role->key === 'university') {
+            $users = User::with(['assignments.role', 'assignments.university', 'assignments.college'])
+                ->whereHas('activeAssignments', fn ($query) => $query
+                    ->where('university_id', $assignment->university_id)
+                    ->whereHas('role', fn ($role) => $role->where('key', 'college')))
+                ->orderBy('id')
+                ->get()
+                ->map(fn (User $item) => $this->userData($item));
         }
 
         return response()->json([
@@ -162,6 +170,37 @@ class PlatformDirectoryController extends Controller
         $this->audit($request, $data['active'] ? 'users.activated' : 'users.deactivated', $user);
 
         return response()->json(['user' => $this->userData($user->load('activeAssignments.role'))]);
+    }
+
+    public function assignCollegeQualityManager(Request $request, User $user): JsonResponse
+    {
+        $data = $request->validate([
+            'collegeId' => ['required', 'string'],
+        ]);
+        /** @var User $actor */
+        $actor = $request->user();
+        $actorAssignment = $actor->activeAssignments()->with('role')->firstOrFail();
+        abort_unless($actorAssignment->role->key === 'university', 403, 'تعيين مسؤولي الكليات من اختصاص مسؤول الجودة الجامعي.');
+
+        $collegeId = $this->numericId($data['collegeId'], 'c');
+        $college = College::whereKey($collegeId)
+            ->where('university_id', $actorAssignment->university_id)
+            ->firstOrFail();
+        $managerAssignment = $user->activeAssignments()
+            ->where('university_id', $actorAssignment->university_id)
+            ->whereHas('role', fn ($query) => $query->where('key', 'college'))
+            ->firstOrFail();
+
+        $managerAssignment->update(['college_id' => $college->id]);
+        $this->audit($request, 'users.college_assignment_updated', $user, [
+            'assignment_id' => $managerAssignment->id,
+            'college_id' => $college->id,
+        ]);
+
+        return response()->json([
+            'user' => $this->userData($user->load(['assignments.role', 'assignments.university', 'assignments.college'])),
+            'message' => 'تم تحديد كلية مسؤول الجودة.',
+        ]);
     }
 
     public function resetPassword(Request $request, User $user): JsonResponse
