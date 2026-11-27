@@ -33,12 +33,15 @@ async function refreshSharedData(){
 }
 let liveRefreshRunning=false;
 // لا تعيد رسم الصفحة أثناء إدخال نص أو فتح نافذة؛ فتظهر تعديلات الأجهزة الأخرى دون إزعاج المستخدم الحالي.
-setInterval(()=>{
+function refreshWhenSafe(){
  const tag=document.activeElement?.tagName;
  if(!user||liveRefreshRunning||document.visibilityState!=='visible'||document.querySelector('.modal-backdrop')||['INPUT','TEXTAREA','SELECT'].includes(tag))return;
  liveRefreshRunning=true;
  refreshSharedData().then(render).catch(()=>{}).finally(()=>{liveRefreshRunning=false;});
-},30000);
+}
+setInterval(refreshWhenSafe,30000);
+// عند العودة للتبويب تُجلب التغييرات فورًا بدل انتظار دورة المزامنة التالية.
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshWhenSafe();});
 let latestLoginTokenPromise=Promise.resolve();
 const nativeFetch=window.fetch.bind(window);
 window.fetch=async(...args)=>{
