@@ -59,6 +59,8 @@ Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(
         Route::put('/users/{user}', [PlatformDirectoryController::class, 'updateUser'])->name('users.update');
         Route::patch('/users/{user}/status', [PlatformDirectoryController::class, 'updateUserStatus'])->name('users.status');
         Route::patch('/users/{user}/password', [PlatformDirectoryController::class, 'resetPassword'])->name('users.password');
+        Route::post('/users/{user}/assignments', [PlatformDirectoryController::class, 'storeAssignment'])->name('users.assignments.store');
+        Route::patch('/users/{user}/assignments/{assignment}/status', [PlatformDirectoryController::class, 'updateAssignmentStatus'])->name('users.assignments.status');
     });
     Route::middleware('permission:institutions.manage')->group(function () {
         Route::post('/institutions', [PlatformDirectoryController::class, 'storeInstitution'])->name('institutions.store');

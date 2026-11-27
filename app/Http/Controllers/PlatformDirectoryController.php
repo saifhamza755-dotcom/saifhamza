@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\Role;
 use App\Models\University;
 use App\Models\User;
+use App\Models\UserAssignment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,13 @@ class PlatformDirectoryController extends Controller
 
         $users = null;
         if ($request->user()->hasPermission('users.manage')) {
-            $users = User::with(['activeAssignments.role'])->orderBy('id')->get()->map(fn (User $user) => $this->userData($user));
+            $users = User::with(['assignments.role', 'assignments.university', 'assignments.college'])
+                ->orderBy('id')
+                ->get()
+                ->map(fn (User $user) => $this->userData(
+                    $user,
+                    $request->user()->is($user) ? $request->session()->get('active_assignment_id') : null
+                ));
         }
 
         return response()->json([
@@ -78,15 +85,71 @@ class PlatformDirectoryController extends Controller
                 'phone' => $data['phone'] ?? null,
                 ...(! empty($data['password']) ? ['password' => $data['password'], 'must_change_password' => true] : []),
             ]);
-            $user->assignments()->update(['active' => false]);
-            $user->assignments()->create([
+            $assignment = $user->activeAssignments()->firstOrFail();
+            $assignment->update([
                 'role_id' => $role->id, 'university_id' => $universityId, 'college_id' => $collegeId,
-                'active' => true, 'assigned_at' => now(),
             ]);
             $this->audit($request, 'users.updated', $user, ['role' => $role->key]);
         });
 
         return response()->json(['user' => $this->userData($user->load('activeAssignments.role'))]);
+    }
+
+    public function storeAssignment(Request $request, User $user): JsonResponse
+    {
+        $data = $request->validate([
+            'role' => ['required', Rule::exists('roles', 'key')],
+            'universityId' => ['nullable', 'string'],
+            'collegeId' => ['nullable', 'string'],
+        ]);
+        $role = Role::where('key', $data['role'])->firstOrFail();
+        [$universityId, $collegeId] = $this->validatedScope($role, $data);
+
+        if ($user->username === 'admin' && $role->key !== 'admin') {
+            throw ValidationException::withMessages(['role' => 'لا يمكن إضافة دور آخر للمسؤول الرئيسي.']);
+        }
+        if ($user->activeAssignments()
+            ->where('role_id', $role->id)
+            ->where('university_id', $universityId)
+            ->where('college_id', $collegeId)
+            ->exists()) {
+            throw ValidationException::withMessages(['role' => 'هذا التكليف موجود ونشط بالفعل.']);
+        }
+
+        $assignment = $user->assignments()->create([
+            'role_id' => $role->id,
+            'university_id' => $universityId,
+            'college_id' => $collegeId,
+            'active' => true,
+            'assigned_at' => now(),
+        ]);
+        $this->audit($request, 'users.assignment_created', $user, ['assignment_id' => $assignment->id]);
+
+        return response()->json(['user' => $this->userData($user->load(['assignments.role', 'assignments.university', 'assignments.college']))], 201);
+    }
+
+    public function updateAssignmentStatus(Request $request, User $user, UserAssignment $assignment): JsonResponse
+    {
+        abort_unless($assignment->user_id === $user->id, 404);
+        $data = $request->validate(['active' => ['required', 'boolean']]);
+        $assignment->loadMissing('role');
+
+        if (! $data['active'] && $user->username === 'admin' && $assignment->role->key === 'admin') {
+            throw ValidationException::withMessages(['active' => 'لا يمكن تعطيل تكليف المسؤول الرئيسي.']);
+        }
+        if (! $data['active'] && $user->activeAssignments()->whereKeyNot($assignment->id)->doesntExist()) {
+            throw ValidationException::withMessages(['active' => 'يجب أن يبقى للمستخدم تكليف نشط واحد على الأقل.']);
+        }
+
+        $assignment->update(['active' => $data['active']]);
+        $this->audit(
+            $request,
+            $data['active'] ? 'users.assignment_activated' : 'users.assignment_deactivated',
+            $user,
+            ['assignment_id' => $assignment->id]
+        );
+
+        return response()->json(['user' => $this->userData($user->load(['assignments.role', 'assignments.university', 'assignments.college']))]);
     }
 
     public function updateUserStatus(Request $request, User $user): JsonResponse
@@ -181,9 +244,13 @@ class PlatformDirectoryController extends Controller
         return [$universityId, $role->scope === 'university' ? null : $collegeId];
     }
 
-    private function userData(User $user): array
+    private function userData(User $user, mixed $selectedAssignmentId = null): array
     {
-        $assignment = $user->activeAssignments->first();
+        $assignments = $user->relationLoaded('assignments')
+            ? $user->assignments
+            : $user->assignments()->with(['role', 'university', 'college'])->get();
+        $activeAssignments = $assignments->filter(fn (UserAssignment $item) => $item->active && (! $item->expires_at || $item->expires_at->isFuture()));
+        $assignment = $activeAssignments->firstWhere('id', (int) $selectedAssignmentId) ?? $activeAssignments->first();
 
         return [
             'id' => $user->id, 'name' => $user->name, 'username' => $user->username,
@@ -191,6 +258,18 @@ class PlatformDirectoryController extends Controller
             'mustChange' => $user->must_change_password, 'role' => $assignment?->role?->key,
             'universityId' => $assignment?->university_id ? 'u'.$assignment->university_id : '',
             'collegeId' => $assignment?->college_id ? 'c'.$assignment->college_id : '',
+            'activeAssignmentId' => $assignment?->id,
+            'assignments' => $assignments->map(fn (UserAssignment $item) => [
+                'id' => $item->id,
+                'role' => $item->role->key,
+                'roleName' => $item->role->name_ar,
+                'universityId' => $item->university_id ? 'u'.$item->university_id : '',
+                'universityName' => $item->university?->name_ar,
+                'collegeId' => $item->college_id ? 'c'.$item->college_id : '',
+                'collegeName' => $item->college?->name_ar,
+                'active' => $item->active,
+                'expiresAt' => $item->expires_at?->toISOString(),
+            ])->values(),
         ];
     }
 

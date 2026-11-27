@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
 use App\Models\User;
+use App\Models\UserAssignment;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -80,5 +82,72 @@ class PlatformDirectoryTest extends TestCase
         $this->actingAs($college)
             ->postJson(route('platform.api.users.store'), [])
             ->assertForbidden();
+    }
+
+    public function test_admin_adds_and_disables_an_additional_assignment(): void
+    {
+        $admin = User::where('username', 'admin')->firstOrFail();
+        $user = User::where('username', 'college')->firstOrFail();
+
+        $created = $this->actingAs($admin)->postJson(route('platform.api.users.assignments.store', $user), [
+            'role' => 'university',
+            'universityId' => 'u1',
+            'collegeId' => '',
+        ])->assertCreated()
+            ->assertJsonCount(2, 'user.assignments')
+            ->assertJsonFragment(['role' => 'university', 'active' => true]);
+
+        $assignmentId = collect($created->json('user.assignments'))
+            ->firstWhere('role', 'university')['id'];
+
+        $this->patchJson(route('platform.api.users.assignments.status', [$user, $assignmentId]), [
+            'active' => false,
+        ])->assertOk()->assertJsonFragment([
+            'id' => $assignmentId,
+            'active' => false,
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'users.assignment_created']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'users.assignment_deactivated']);
+    }
+
+    public function test_last_active_assignment_cannot_be_disabled(): void
+    {
+        $admin = User::where('username', 'admin')->firstOrFail();
+        $user = User::where('username', 'college')->firstOrFail();
+        $assignment = $user->activeAssignments()->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson(route('platform.api.users.assignments.status', [$user, $assignment]), [
+                'active' => false,
+            ])->assertUnprocessable()->assertJsonValidationErrors('active');
+
+        $this->assertTrue($assignment->fresh()->active);
+    }
+
+    public function test_editing_user_preserves_other_assignments(): void
+    {
+        $admin = User::where('username', 'admin')->firstOrFail();
+        $user = User::where('username', 'college')->firstOrFail();
+        $extra = UserAssignment::create([
+            'user_id' => $user->id,
+            'role_id' => Role::where('key', 'university')->value('id'),
+            'university_id' => 1,
+            'active' => true,
+            'assigned_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->putJson(route('platform.api.users.update', $user), [
+            'name' => 'اسم المستخدم المحدث',
+            'username' => $user->username,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'role' => 'college',
+            'universityId' => 'u1',
+            'collegeId' => 'c1',
+        ])->assertOk();
+
+        $this->assertTrue($extra->fresh()->active);
+        $this->assertSame(2, $user->activeAssignments()->count());
     }
 }
