@@ -117,7 +117,17 @@ class PlatformAssessmentController extends Controller
     {
         $response->load('assessment.cycle');
         $this->authorizeCollege($request, $response->assessment, 'college');
-        abort_unless($response->assessment->isEditable(), 409, 'لا يمكن رفع دليل في الحالة الحالية.');
+        $legacyReplacement = $response->assessment->status === 'submitted'
+            && $response->evidenceFiles()->where('status', 'returned')->exists();
+        abort_unless($response->assessment->isEditable() || $legacyReplacement, 409, 'لا يمكن رفع دليل في الحالة الحالية.');
+        if ($legacyReplacement) {
+            $response->assessment->update([
+                'status' => 'returned',
+                'review_notes' => 'أعيد التقرير للاستكمال بسبب دليل معاد من المراجعة.',
+                'reviewed_at' => now(),
+            ]);
+            $this->audit($request, 'self_assessment.reopened_for_legacy_evidence', $response->assessment);
+        }
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'file' => ['required', 'file', 'max:10240', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg'],

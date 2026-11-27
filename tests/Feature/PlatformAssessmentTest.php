@@ -113,6 +113,35 @@ class PlatformAssessmentTest extends TestCase
         ], ['Accept' => 'application/json'])->assertCreated();
     }
 
+    public function test_legacy_returned_evidence_can_be_replaced_while_assessment_is_submitted(): void
+    {
+        Storage::fake('local');
+        $college = User::where('username', 'college')->firstOrFail();
+        $assessment = $this->startAssessment($college);
+        $response = $assessment->responses()->firstOrFail();
+        $assessment->update(['status' => 'submitted']);
+        EvidenceFile::create([
+            'assessment_response_id' => $response->id,
+            'title' => 'دليل معاد قديم',
+            'original_name' => 'old.pdf',
+            'stored_path' => 'evidence/legacy-returned.pdf',
+            'mime_type' => 'application/pdf',
+            'size_bytes' => 100,
+            'sha256' => str_repeat('a', 64),
+            'status' => 'returned',
+            'review_notes' => 'يرجى تحسين الصورة.',
+            'uploaded_by' => $college->id,
+        ]);
+
+        $this->actingAs($college)->post(route('platform.api.assessments.evidence.store', $response), [
+            'title' => 'الدليل البديل',
+            'file' => UploadedFile::fake()->create('better-image.jpg', 100, 'image/jpeg'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        $this->assertDatabaseHas('self_assessments', ['id' => $assessment->id, 'status' => 'returned']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'self_assessment.reopened_for_legacy_evidence', 'target_id' => $assessment->id]);
+    }
+
     public function test_college_submits_and_dean_reviews_evidence_then_approves_report(): void
     {
         $college = User::where('username', 'college')->firstOrFail();
