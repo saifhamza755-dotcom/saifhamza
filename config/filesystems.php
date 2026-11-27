@@ -38,6 +38,14 @@ return [
             'report' => false,
         ],
 
+        // قرص مستقل للأدلة؛ يوجّه في Wasmer إلى Volume دائم بدل نظام الملفات المؤقت.
+        'evidence' => [
+            'driver' => 'local',
+            'root' => env('EVIDENCE_STORAGE_PATH', storage_path('app/private')),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

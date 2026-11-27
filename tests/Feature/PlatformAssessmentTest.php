@@ -55,7 +55,7 @@ class PlatformAssessmentTest extends TestCase
 
     public function test_evidence_is_privately_uploaded_and_returned_to_interface(): void
     {
-        Storage::fake('local');
+        Storage::fake('evidence');
         $college = User::where('username', 'college')->firstOrFail();
         $assessment = $this->startAssessment($college);
         $response = $assessment->responses()->firstOrFail();
@@ -67,13 +67,13 @@ class PlatformAssessmentTest extends TestCase
             ->assertJsonPath('evidence.indicatorId', 'i'.$response->indicator_id);
 
         $evidence = EvidenceFile::findOrFail((int) substr($uploaded->json('evidence.id'), 2));
-        Storage::disk('local')->assertExists($evidence->stored_path);
+        Storage::disk('evidence')->assertExists($evidence->stored_path);
         $this->assertDatabaseHas('audit_logs', ['action' => 'evidence.uploaded']);
     }
 
     public function test_returning_evidence_reopens_assessment_for_replacement(): void
     {
-        Storage::fake('local');
+        Storage::fake('evidence');
         $college = User::where('username', 'college')->firstOrFail();
         $dean = User::where('username', 'dean')->firstOrFail();
         $assessment = $this->startAssessment($college);
@@ -115,7 +115,7 @@ class PlatformAssessmentTest extends TestCase
 
     public function test_legacy_returned_evidence_can_be_replaced_while_assessment_is_submitted(): void
     {
-        Storage::fake('local');
+        Storage::fake('evidence');
         $college = User::where('username', 'college')->firstOrFail();
         $assessment = $this->startAssessment($college);
         $response = $assessment->responses()->firstOrFail();

@@ -133,7 +133,7 @@ class PlatformAssessmentController extends Controller
             'file' => ['required', 'file', 'max:10240', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg'],
         ]);
         $file = $request->file('file');
-        $path = $file->store("evidence/{$response->assessment->id}/{$response->id}", 'local');
+        $path = $file->store("evidence/{$response->assessment->id}/{$response->id}", 'evidence');
         abort_unless($path, 500, 'تعذر حفظ الملف.');
         $evidence = EvidenceFile::create([
             'assessment_response_id' => $response->id, 'title' => $data['title'],
@@ -152,7 +152,7 @@ class PlatformAssessmentController extends Controller
         $evidence->load('response.assessment.cycle');
         $this->authorizeCollege($request, $evidence->response->assessment, 'college');
         abort_unless($evidence->response->assessment->isEditable(), 409, 'لا يمكن حذف الدليل في الحالة الحالية.');
-        Storage::disk('local')->delete($evidence->stored_path);
+        Storage::disk('evidence')->delete($evidence->stored_path);
         $this->audit($request, 'evidence.deleted', $evidence);
         $evidence->delete();
 

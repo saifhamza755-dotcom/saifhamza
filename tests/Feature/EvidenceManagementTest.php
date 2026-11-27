@@ -23,7 +23,7 @@ class EvidenceManagementTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
-        Storage::fake('local');
+        Storage::fake('evidence');
     }
 
     public function test_college_manager_can_upload_and_delete_private_evidence(): void
@@ -37,11 +37,11 @@ class EvidenceManagementTest extends TestCase
         ])->assertRedirect();
 
         $evidence = EvidenceFile::firstOrFail();
-        Storage::disk('local')->assertExists($evidence->stored_path);
+        Storage::disk('evidence')->assertExists($evidence->stored_path);
         $this->assertSame('pending', $evidence->status);
 
         $this->delete(route('evidence.destroy', $evidence))->assertRedirect();
-        Storage::disk('local')->assertMissing($evidence->stored_path);
+        Storage::disk('evidence')->assertMissing($evidence->stored_path);
         $this->assertDatabaseMissing('evidence_files', ['id' => $evidence->id]);
     }
 
