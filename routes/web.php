@@ -19,6 +19,7 @@ use App\Http\Controllers\PlatformDirectoryController;
 use App\Http\Controllers\PlatformEvaluationTeamController;
 use App\Http\Controllers\PlatformExternalEvaluationController;
 use App\Http\Controllers\PlatformImprovementController;
+use App\Http\Controllers\PlatformPasswordResetRequestController;
 use App\Http\Controllers\PlatformProfileController;
 use App\Http\Controllers\PlatformQualityController;
 use App\Http\Controllers\PlatformReportController;
@@ -44,11 +45,15 @@ Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(
     Route::put('/profile', [PlatformProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [PlatformProfileController::class, 'updatePassword'])->name('profile.password');
     Route::post('/account-requests', [PlatformAccountRequestController::class, 'store'])->withoutMiddleware('auth')->name('account-requests.store');
+    Route::post('/password-reset-requests', [PlatformPasswordResetRequestController::class, 'store'])->withoutMiddleware('auth')->name('password-reset-requests.store');
     Route::get('/account-requests', [PlatformAccountRequestController::class, 'index'])->name('account-requests.index');
+    Route::get('/password-reset-requests', [PlatformPasswordResetRequestController::class, 'index'])->name('password-reset-requests.index');
     Route::get('/directory', [PlatformDirectoryController::class, 'index'])->name('directory');
     Route::middleware('permission:users.manage')->group(function () {
         Route::post('/account-requests/{accountRequest}/approve', [PlatformAccountRequestController::class, 'approve'])->name('account-requests.approve');
         Route::post('/account-requests/{accountRequest}/reject', [PlatformAccountRequestController::class, 'reject'])->name('account-requests.reject');
+        Route::post('/password-reset-requests/{passwordResetRequest}/process', [PlatformPasswordResetRequestController::class, 'process'])->name('password-reset-requests.process');
+        Route::post('/password-reset-requests/{passwordResetRequest}/reject', [PlatformPasswordResetRequestController::class, 'reject'])->name('password-reset-requests.reject');
         Route::post('/users', [PlatformDirectoryController::class, 'storeUser'])->name('users.store');
         Route::put('/users/{user}', [PlatformDirectoryController::class, 'updateUser'])->name('users.update');
         Route::patch('/users/{user}/status', [PlatformDirectoryController::class, 'updateUserStatus'])->name('users.status');

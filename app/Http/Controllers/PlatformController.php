@@ -42,6 +42,7 @@ class PlatformController extends Controller
                 'reportsUrl' => url('/platform/api/reports'),
                 'activityUrl' => url('/platform/api/activity'),
                 'accountRequestsUrl' => url('/platform/api/account-requests'),
+                'passwordResetRequestsUrl' => url('/platform/api/password-reset-requests'),
                 'profileUrl' => url('/platform/api/profile'),
                 'csrfToken' => csrf_token(),
             ],
