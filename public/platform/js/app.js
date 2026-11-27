@@ -23,6 +23,22 @@ const btn=(text,action,id='',tone='primary')=>`<button type="button" class="btn 
 const progress=p=>`<div class="progress"><span style="width:${p}%"></span></div><span class="small">${p}%</span>`,history=f=>`<div class="history">${(f.history||[]).map(h=>`<p>${badge(h.status)} ${esc(h.note||'')}<br><span class="muted">${esc(h.user)} · ${date(h.date)}</span></p>`).join('')||'لا توجد انتقالات مسجلة'}</div>`;
 function save(){localStorage.setItem(KEY,JSON.stringify(state));}
 setInterval(()=>{if(user?.role==='admin'){Promise.all([refreshAccountRequests(),refreshPasswordResetRequests()]).then(()=>{if(route==='requests')render();}).catch(()=>{});}},15000);
+// يجلب التغييرات التي قام بها مستخدم آخر من Laravel، مع إبقاء التخزين المحلي مجرد ذاكرة مؤقتة للواجهة.
+async function refreshSharedData(){
+ if(!user)return;
+ const loads=[refreshDirectory(),refreshQuality(),refreshAssessments(),refreshUniversityReports(),refreshEvaluationTeams(),refreshExternalEvaluations()];
+ if(['university','college','central'].includes(user.role))loads.push(refreshImprovement());
+ if(user.role==='admin')loads.push(refreshAccountRequests(),refreshPasswordResetRequests());
+ await Promise.all(loads);
+}
+let liveRefreshRunning=false;
+// لا تعيد رسم الصفحة أثناء إدخال نص أو فتح نافذة؛ فتظهر تعديلات الأجهزة الأخرى دون إزعاج المستخدم الحالي.
+setInterval(()=>{
+ const tag=document.activeElement?.tagName;
+ if(!user||liveRefreshRunning||document.visibilityState!=='visible'||document.querySelector('.modal-backdrop')||['INPUT','TEXTAREA','SELECT'].includes(tag))return;
+ liveRefreshRunning=true;
+ refreshSharedData().then(render).catch(()=>{}).finally(()=>{liveRefreshRunning=false;});
+},30000);
 let latestLoginTokenPromise=Promise.resolve();
 const nativeFetch=window.fetch.bind(window);
 window.fetch=async(...args)=>{
@@ -255,5 +271,5 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-action],[d
 document.addEventListener('change',e=>{if(e.target.name==='version-pick'){versionId=e.target.value;render();}const map={'ctx-cycle':'cycleId','ctx-university':'universityId','ctx-college':'collegeId'};if(map[e.target.name]){cx[map[e.target.name]]=e.target.value;render();}});
 document.addEventListener('submit',async e=>{if(!['loginForm','selfForm','externalForm','profileForm'].includes(e.target.id))return;e.preventDefault();try{const fd=new FormData(e.target),f=Object.fromEntries(fd);if(e.target.id==='loginForm'){const response=await fetch(platform.loginUrl,{method:'POST',headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':platform.csrfToken},body:JSON.stringify({username:f.username.trim(),password:f.password})});const payload=await response.json();if(!response.ok)throw Error(payload.message||Object.values(payload.errors||{})[0]?.[0]||'تعذر تسجيل الدخول');user=sessionUser(payload.user);platform.user=payload.user;const loads=[refreshDirectory(),refreshQuality(),refreshAssessments(),refreshUniversityReports(),refreshEvaluationTeams(),refreshExternalEvaluations()];if(['university','college','central'].includes(user.role))loads.push(refreshImprovement());if(user.role==='admin')loads.push(refreshAccountRequests(),refreshPasswordResetRequests());await Promise.all(loads);route='dashboard';render();return;}if(e.target.id==='profileForm'){const payload=await api(platform.profileUrl,{method:'PUT',body:JSON.stringify({name:f.name.trim(),email:f.email.trim(),phone:f.phone.trim()})});user=sessionUser(payload.user);platform.user=payload.user;save();}else{const scores={},comments={};for(const [k,v] of fd){if(k.startsWith('score:')&&v!=='')scores[k.slice(6)]=Number(v);if(k.startsWith('comment:'))comments[k.slice(8)]=v;}if(e.target.id==='selfForm'){const co=current().co;await api(platform.assessmentsUrl+'/'+co.assessmentId,{method:'PUT',body:JSON.stringify({scores,comments,report_notes:co.note||''})});await refreshAssessments();}else{const ex=current().f.external;await api(platform.externalEvaluationsUrl+'/'+ex.evaluationId+'/scores',{method:'PUT',body:JSON.stringify({collegeId:cx.collegeId,scores,comments})});await refreshExternalEvaluations();}}render();toast('تم الحفظ');}catch(err){toast(err.message);}});
 render();
-if(user){const loads=[refreshDirectory(),refreshQuality(),refreshAssessments(),refreshUniversityReports(),refreshEvaluationTeams(),refreshExternalEvaluations()];if(['university','college','central'].includes(user.role))loads.push(refreshImprovement());Promise.all(loads).then(render).catch(err=>toast(err.message));}
+if(user){refreshSharedData().then(render).catch(err=>toast(err.message));}
 })();
