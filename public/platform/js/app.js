@@ -84,9 +84,12 @@ async function refreshDirectory(){
  const payload=await api(platform.directoryUrl);
  if(Array.isArray(payload.institutions))state.institutions=payload.institutions;
  if(Array.isArray(payload.users)){
-  const username=user?.username;
+  // مسؤول الجامعة يتسلم قائمة مسؤولي الكليات فقط؛ احتفظ بحسابه الحالي حتى لا يُفسَّر غيابه من هذه القائمة كتسجيل خروج.
+  const currentUser=user,username=currentUser?.username;
   state.users=payload.users;
-  user=state.users.find(x=>x.username===username)||user;
+  const refreshedUser=state.users.find(x=>x.username===username);
+  if(refreshedUser)user=refreshedUser;
+  else if(currentUser){state.users.push(currentUser);user=currentUser;}
   if(user)sessionStorage.setItem(SESSION,user.id);
  }
  save();
