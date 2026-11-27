@@ -165,6 +165,24 @@ class PlatformAssessmentController extends Controller
         ]);
         $this->audit($request, 'evidence.'.$data['status'], $evidence);
 
+        if ($data['status'] === 'returned') {
+            $assessment = $evidence->response->assessment;
+            $assessment->update([
+                'status' => 'returned',
+                'review_notes' => 'أعيد دليل للاستكمال: '.$data['review_notes'],
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+            ]);
+            $this->audit($request, 'self_assessment.returned_for_evidence', $assessment);
+            $notifications = app(NotificationService::class);
+            $notifications->send(
+                $notifications->usersWithRole('college', $assessment->university_id, $assessment->college_id),
+                'أعيد دليل للاستكمال',
+                'أعاد العميد أحد الأدلة مع ملاحظة. افتح الأدلة والشواهد واستبدل الدليل ثم أرسل التقرير للمراجعة.',
+                'platform'
+            );
+        }
+
         return response()->json(['message' => 'تمت مراجعة الدليل.']);
     }
 

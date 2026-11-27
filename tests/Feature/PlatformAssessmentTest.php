@@ -71,6 +71,48 @@ class PlatformAssessmentTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'evidence.uploaded']);
     }
 
+    public function test_returning_evidence_reopens_assessment_for_replacement(): void
+    {
+        Storage::fake('local');
+        $college = User::where('username', 'college')->firstOrFail();
+        $dean = User::where('username', 'dean')->firstOrFail();
+        $assessment = $this->startAssessment($college);
+        $response = $assessment->responses()->firstOrFail();
+
+        $assessment->responses()->update(['score' => 4, 'notes' => 'مكتمل']);
+        foreach ($assessment->responses as $item) {
+            $created = EvidenceFile::create([
+                'assessment_response_id' => $item->id,
+                'title' => 'الدليل الأول',
+                'original_name' => 'old.pdf',
+                'stored_path' => 'evidence/old-'.$item->id.'.pdf',
+                'mime_type' => 'application/pdf',
+                'size_bytes' => 100,
+                'sha256' => str_repeat('a', 64),
+                'status' => 'pending',
+                'uploaded_by' => $college->id,
+            ]);
+            if ($item->id === $response->id) {
+                $evidence = $created;
+            }
+        }
+
+        $this->actingAs($college)->postJson(route('platform.api.assessments.submit', $assessment))->assertOk();
+        $this->actingAs($dean)->patchJson(route('platform.api.assessments.evidence.review', $evidence), [
+            'status' => 'returned',
+            'review_notes' => 'يرجى رفع صورة أوضح.',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('self_assessments', ['id' => $assessment->id, 'status' => 'returned']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'self_assessment.returned_for_evidence', 'target_id' => $assessment->id]);
+        $this->assertTrue(AppNotification::where('user_id', $college->id)->where('title', 'أعيد دليل للاستكمال')->exists());
+
+        $this->actingAs($college)->post(route('platform.api.assessments.evidence.store', $response), [
+            'title' => 'الدليل البديل',
+            'file' => UploadedFile::fake()->create('replacement.pdf', 100, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+    }
+
     public function test_college_submits_and_dean_reviews_evidence_then_approves_report(): void
     {
         $college = User::where('username', 'college')->firstOrFail();
