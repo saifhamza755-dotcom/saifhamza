@@ -26,7 +26,7 @@ setInterval(()=>{if(user?.role==='admin'){Promise.all([refreshAccountRequests(),
 // يجلب التغييرات التي قام بها مستخدم آخر من Laravel، مع إبقاء التخزين المحلي مجرد ذاكرة مؤقتة للواجهة.
 async function refreshSharedData(){
  if(!user)return;
- const loads=[refreshDirectory(),refreshQuality(),refreshAssessments(),refreshUniversityReports(),refreshEvaluationTeams(),refreshExternalEvaluations()];
+ const loads=[refreshDirectory(),refreshQuality(),refreshAssessments(),refreshUniversityReports(),refreshEvaluationTeams(),refreshExternalEvaluations(),refreshActivity()];
  if(['university','college','central'].includes(user.role))loads.push(refreshImprovement());
  if(user.role==='admin')loads.push(refreshAccountRequests(),refreshPasswordResetRequests());
  await Promise.all(loads);
@@ -127,7 +127,6 @@ async function refreshExternalEvaluations(){
   file.external={...file.external,...evaluation};
  }
  if(['central','university'].includes(user?.role))await refreshAccreditation();
- await refreshActivity();
  save();
  return payload;
 }
