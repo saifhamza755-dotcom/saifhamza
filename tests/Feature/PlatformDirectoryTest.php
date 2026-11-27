@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\College;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserAssignment;
@@ -149,5 +150,42 @@ class PlatformDirectoryTest extends TestCase
 
         $this->assertTrue($extra->fresh()->active);
         $this->assertSame(2, $user->activeAssignments()->count());
+    }
+
+    public function test_authorized_users_can_update_institution_name_and_code(): void
+    {
+        $central = User::where('username', 'central')->firstOrFail();
+        $universityManager = User::where('username', 'university')->firstOrFail();
+
+        $this->actingAs($central)
+            ->putJson(route('platform.api.institutions.update', ['type' => 'u', 'id' => 1]), [
+                'name' => 'جامعة صنعاء الجديدة',
+                'code' => 'SANA-NEW',
+            ])
+            ->assertOk();
+
+        $this->actingAs($universityManager)
+            ->putJson(route('platform.api.institutions.update', ['type' => 'c', 'id' => 1]), [
+                'name' => 'كلية الهندسة والتقنية',
+                'code' => 'ENG-TECH',
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('universities', ['id' => 1, 'name_ar' => 'جامعة صنعاء الجديدة', 'code' => 'SANA-NEW']);
+        $this->assertDatabaseHas('colleges', ['id' => 1, 'name_ar' => 'كلية الهندسة والتقنية', 'code' => 'ENG-TECH']);
+    }
+
+    public function test_duplicate_institution_code_is_rejected_within_its_scope(): void
+    {
+        $universityManager = User::where('username', 'university')->firstOrFail();
+        $existingCode = College::findOrFail(2)->code;
+
+        $this->actingAs($universityManager)
+            ->putJson(route('platform.api.institutions.update', ['type' => 'c', 'id' => 1]), [
+                'name' => 'كلية الهندسة',
+                'code' => $existingCode,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('code');
     }
 }

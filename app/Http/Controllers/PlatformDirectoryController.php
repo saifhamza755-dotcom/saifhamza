@@ -202,13 +202,17 @@ class PlatformDirectoryController extends Controller
 
     public function updateInstitution(Request $request, string $type, int $id): JsonResponse
     {
-        $data = $request->validate(['name' => ['required', 'string', 'max:255']]);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:30'],
+        ]);
         $entity = $this->resolveInstitution($type, $id);
         $this->assertInstitutionScope($request, $entity);
-        $entity->update(['name_ar' => $data['name']]);
+        $this->assertUniqueInstitutionCode($entity, trim($data['code']));
+        $entity->update(['name_ar' => trim($data['name']), 'code' => trim($data['code'])]);
         $this->audit($request, 'institutions.updated', $entity);
 
-        return response()->json(['message' => 'تم تحديث اسم المؤسسة.']);
+        return response()->json(['message' => 'تم تحديث اسم ورمز المؤسسة.']);
     }
 
     private function validateUser(Request $request, ?User $user = null): array
@@ -275,13 +279,13 @@ class PlatformDirectoryController extends Controller
 
     private function institutionData(University $university): array
     {
-        $rows = [['id' => 'u'.$university->id, 'type' => 'جامعة', 'name' => $university->name_ar, 'parent' => null, 'active' => $university->active]];
+        $rows = [['id' => 'u'.$university->id, 'type' => 'جامعة', 'name' => $university->name_ar, 'code' => $university->code, 'parent' => null, 'active' => $university->active]];
         foreach ($university->colleges as $college) {
-            $rows[] = ['id' => 'c'.$college->id, 'type' => 'كلية', 'name' => $college->name_ar, 'parent' => 'u'.$university->id, 'active' => $college->active];
+            $rows[] = ['id' => 'c'.$college->id, 'type' => 'كلية', 'name' => $college->name_ar, 'code' => $college->code, 'parent' => 'u'.$university->id, 'active' => $college->active];
             foreach ($college->departments as $department) {
-                $rows[] = ['id' => 'd'.$department->id, 'type' => 'قسم', 'name' => $department->name_ar, 'parent' => 'c'.$college->id, 'active' => $department->active];
+                $rows[] = ['id' => 'd'.$department->id, 'type' => 'قسم', 'name' => $department->name_ar, 'code' => $department->code, 'parent' => 'c'.$college->id, 'active' => $department->active];
                 foreach ($department->programs as $program) {
-                    $rows[] = ['id' => 'p'.$program->id, 'type' => 'برنامج', 'name' => $program->name_ar, 'parent' => 'd'.$department->id, 'active' => $program->active];
+                    $rows[] = ['id' => 'p'.$program->id, 'type' => 'برنامج', 'name' => $program->name_ar, 'code' => $program->code, 'parent' => 'd'.$department->id, 'active' => $program->active];
                 }
             }
         }
@@ -349,6 +353,20 @@ class PlatformDirectoryController extends Controller
             'd' => Department::findOrFail($id), 'p' => AcademicProgram::findOrFail($id),
             default => abort(404),
         };
+    }
+
+    private function assertUniqueInstitutionCode(Model $entity, string $code): void
+    {
+        $exists = match (true) {
+            $entity instanceof University => University::where('code', $code)->whereKeyNot($entity->id)->exists(),
+            $entity instanceof College => College::where('university_id', $entity->university_id)->where('code', $code)->whereKeyNot($entity->id)->exists(),
+            $entity instanceof Department => Department::where('college_id', $entity->college_id)->where('code', $code)->whereKeyNot($entity->id)->exists(),
+            default => AcademicProgram::where('department_id', $entity->department_id)->where('code', $code)->whereKeyNot($entity->id)->exists(),
+        };
+
+        if ($exists) {
+            throw ValidationException::withMessages(['code' => 'الرمز مستخدم مسبقًا داخل هذا النطاق.']);
+        }
     }
 
     private function numericId(?string $value, string $prefix): ?int
