@@ -116,6 +116,6 @@ class PlatformSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('platform');
+        return redirect()->route('platform')->with('session_expired', $request->boolean('expired'));
     }
 }

@@ -94,4 +94,18 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
         $this->assertDatabaseHas('audit_logs', ['action' => 'auth.logout']);
     }
+
+    public function test_expired_platform_session_returns_to_login_with_arabic_notice_flag(): void
+    {
+        $user = User::where('username', 'college')->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('platform.session.destroy-page', ['expired' => 1]))
+            ->assertRedirect(route('platform'));
+
+        $this->assertGuest();
+        $this->get(route('platform'))
+            ->assertOk()
+            ->assertSee('"sessionExpired":true', false);
+    }
 }

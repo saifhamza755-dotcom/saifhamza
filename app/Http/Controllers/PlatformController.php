@@ -63,6 +63,7 @@ class PlatformController extends Controller
                 'passwordResetRequestsUrl' => url('/platform/api/password-reset-requests'),
                 'profileUrl' => url('/platform/api/profile'),
                 'csrfToken' => csrf_token(),
+                'sessionExpired' => (bool) $request->session()->get('session_expired'),
             ],
         ]);
     }
