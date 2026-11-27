@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\AppNotification;
 use App\Models\College;
 use App\Models\EvaluationCycle;
 use App\Models\EvidenceFile;
 use App\Models\SelfAssessment;
 use App\Models\StandardsVersion;
 use App\Models\University;
+use App\Models\UniversityReport;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -113,6 +115,61 @@ class PlatformAssessmentTest extends TestCase
         $this->actingAs(User::where('username', 'dean')->firstOrFail())
             ->putJson(route('platform.api.assessments.save', $assessment), ['scores' => []])
             ->assertForbidden();
+    }
+
+    public function test_university_reopens_approved_college_assessment_with_reason(): void
+    {
+        $cycle = $this->openCycle();
+        $university = University::where('code', 'SU')->firstOrFail();
+        $college = College::where('code', 'ENG')->firstOrFail();
+        $assessment = SelfAssessment::create([
+            'evaluation_cycle_id' => $cycle->id,
+            'university_id' => $university->id,
+            'college_id' => $college->id,
+            'status' => 'approved',
+            'created_by' => User::where('username', 'college')->value('id'),
+        ]);
+        $universityManager = User::where('username', 'university')->firstOrFail();
+
+        $this->actingAs($universityManager)
+            ->postJson(route('platform.api.assessments.reopen', $assessment), [
+                'review_notes' => 'يرجى استكمال توثيق نتائج معيار الموارد.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('assessment.status', 'معاد للاستكمال')
+            ->assertJsonPath('assessment.reviewNote', 'يرجى استكمال توثيق نتائج معيار الموارد.');
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'self_assessment.reopened_by_university', 'target_id' => $assessment->id]);
+        $this->assertTrue(AppNotification::where('title', 'أعيد تقرير الكلية للاستكمال')->exists());
+    }
+
+    public function test_university_cannot_reopen_college_assessment_after_university_report_is_submitted(): void
+    {
+        $cycle = $this->openCycle();
+        $university = University::where('code', 'SU')->firstOrFail();
+        $college = College::where('code', 'ENG')->firstOrFail();
+        $assessment = SelfAssessment::create([
+            'evaluation_cycle_id' => $cycle->id,
+            'university_id' => $university->id,
+            'college_id' => $college->id,
+            'status' => 'approved',
+            'created_by' => User::where('username', 'college')->value('id'),
+        ]);
+        UniversityReport::create([
+            'evaluation_cycle_id' => $cycle->id,
+            'university_id' => $university->id,
+            'status' => 'submitted',
+            'overall_score' => 0,
+            'college_count' => 1,
+            'standards_snapshot' => [],
+            'prepared_by' => User::where('username', 'university')->value('id'),
+        ]);
+
+        $this->actingAs(User::where('username', 'university')->firstOrFail())
+            ->postJson(route('platform.api.assessments.reopen', $assessment), [
+                'review_notes' => 'سبب الإعادة',
+            ])
+            ->assertConflict();
     }
 
     private function openCycle(): EvaluationCycle

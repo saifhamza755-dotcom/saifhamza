@@ -94,6 +94,7 @@ Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(
     });
     Route::get('/university-reports', [PlatformUniversityReportController::class, 'index'])->name('university-reports.index');
     Route::middleware('permission:university_reports.manage')->group(function () {
+        Route::post('/assessments/{assessment}/reopen', [PlatformAssessmentController::class, 'reopen'])->name('assessments.reopen');
         Route::post('/university-reports/cycles/{cycle}/generate', [PlatformUniversityReportController::class, 'generate'])->name('university-reports.generate');
         Route::put('/university-reports/{report}', [PlatformUniversityReportController::class, 'save'])->name('university-reports.save');
         Route::post('/university-reports/{report}/submit', [PlatformUniversityReportController::class, 'submit'])->name('university-reports.submit');

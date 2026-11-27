@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\EvaluationCycle;
 use App\Models\EvidenceFile;
 use App\Models\SelfAssessment;
+use App\Models\UniversityReport;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -182,6 +183,42 @@ class PlatformAssessmentController extends Controller
             'reviewed_by' => $request->user()->id, 'reviewed_at' => now(),
         ]);
         $this->audit($request, 'self_assessment.'.$data['decision'], $assessment);
+
+        return response()->json(['assessment' => $this->assessmentData($assessment->fresh()->load($this->relations()))]);
+    }
+
+    public function reopen(Request $request, SelfAssessment $assessment): JsonResponse
+    {
+        $assignment = $request->user()->activeAssignments()
+            ->whereHas('role', fn ($query) => $query->where('key', 'university'))
+            ->whereNotNull('university_id')
+            ->firstOrFail();
+        abort_unless($assignment->university_id === $assessment->university_id, 403);
+        abort_unless($assessment->status === 'approved', 409, 'لا يمكن إعادة تقرير غير معتمد.');
+
+        $reportStatus = UniversityReport::where('evaluation_cycle_id', $assessment->evaluation_cycle_id)
+            ->where('university_id', $assessment->university_id)
+            ->value('status');
+        abort_unless(! $reportStatus || in_array($reportStatus, ['draft', 'returned'], true), 409, 'لا يمكن إعادة تقرير كلية بعد إرسال التقرير الجامعي أو اعتماده.');
+
+        $data = $request->validate([
+            'review_notes' => ['required', 'string', 'max:3000'],
+        ]);
+        $assessment->update([
+            'status' => 'returned',
+            'review_notes' => $data['review_notes'],
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+        ]);
+        $this->audit($request, 'self_assessment.reopened_by_university', $assessment);
+        $notifications = app(NotificationService::class);
+        $notifications->send(
+            $notifications->usersWithRole('college', $assessment->university_id, $assessment->college_id),
+            'أعيد تقرير الكلية للاستكمال',
+            $data['review_notes'],
+            'assessments.edit',
+            ['assessment' => $assessment->id]
+        );
 
         return response()->json(['assessment' => $this->assessmentData($assessment->fresh()->load($this->relations()))]);
     }
