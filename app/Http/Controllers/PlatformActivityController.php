@@ -18,7 +18,16 @@ class PlatformActivityController extends Controller
 
     public function readAll(Request $request): JsonResponse
     {
-        AppNotification::where('user_id', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);
+        $count = AppNotification::where('user_id', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);
+        if ($count > 0) {
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'notifications.marked_read',
+                'target_type' => AppNotification::class,
+                'metadata' => ['count' => $count],
+                'ip_address' => $request->ip(),
+            ]);
+        }
 
         return response()->json(['message' => 'تم تعليم الإشعارات كمقروءة.']);
     }
@@ -28,6 +37,6 @@ class PlatformActivityController extends Controller
         abort_unless($request->user()->hasPermission('audit.view'), 403);
         $items = AuditLog::with('user')->latest('created_at')->limit(100)->get();
 
-        return response()->json(['audit' => $items->map(fn (AuditLog $item) => ['id' => $item->id, 'user' => $item->user?->name ?? 'النظام', 'action' => $item->action, 'entity' => class_basename($item->target_type ?? '').($item->target_id ? '#'.$item->target_id : ''), 'date' => $item->created_at?->toIso8601String(), 'metadata' => $item->metadata ?? []])]);
+        return response()->json(['audit' => $items->map(fn (AuditLog $item) => ['id' => $item->id, 'user' => $item->user?->name ?? 'النظام', 'action' => $item->action, 'entity' => class_basename($item->target_type ?? '').($item->target_id ? '#'.$item->target_id : ''), 'date' => $item->created_at?->toIso8601String(), 'metadata' => $item->metadata ?? [], 'ipAddress' => $item->ip_address ?? '—'])]);
     }
 }

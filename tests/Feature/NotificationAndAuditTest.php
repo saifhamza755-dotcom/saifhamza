@@ -32,6 +32,13 @@ class NotificationAndAuditTest extends TestCase
 
         $this->assertNotNull(AppNotification::where('user_id', $college->id)->first()->read_at);
         $this->assertNull(AppNotification::where('user_id', $dean->id)->first()->read_at);
+
+        AppNotification::create(['user_id' => $college->id, 'title' => 'إشعار جديد', 'body' => 'للتدقيق']);
+        $this->patchJson(route('platform.api.activity.notifications.read-all'))->assertOk();
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $college->id,
+            'action' => 'notifications.marked_read',
+        ]);
     }
 
     public function test_user_cannot_open_another_users_notification(): void

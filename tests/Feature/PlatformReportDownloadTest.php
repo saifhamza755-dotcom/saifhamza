@@ -62,6 +62,11 @@ class PlatformReportDownloadTest extends TestCase
             ->assertHeader('content-type', 'application/msword; charset=UTF-8')
             ->assertHeader('content-disposition', 'attachment; filename="college-quality-report.doc"')
             ->assertSee('ملاحظة محفوظة على الخادم');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'reports.college_downloaded',
+            'user_id' => User::where('username', 'college')->value('id'),
+        ]);
     }
 
     public function test_other_roles_cannot_download_college_report(): void

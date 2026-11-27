@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccreditationDecision;
+use App\Models\AuditLog;
 use App\Models\College;
 use App\Models\EvaluationCycle;
 use App\Models\ExternalEvaluation;
@@ -19,11 +20,14 @@ class PlatformReportController extends Controller
     /** ينشئ ملف Word من بيانات قاعدة البيانات الفعلية، وليس من تخزين المتصفح. */
     public function download(Request $request, string $kind): Response
     {
-        return match ($kind) {
+        $response = match ($kind) {
             'college' => $this->collegeDownload($request),
             'external' => $this->externalDownload($request),
             default => abort(404),
         };
+        $this->audit($request, 'reports.'.$kind.'_downloaded', ['format' => 'word']);
+
+        return $response;
     }
 
     /** ينشئ ملخص الجامعة للتصدير من السجلات المشتركة في قاعدة البيانات. */
@@ -64,6 +68,8 @@ class PlatformReportController extends Controller
             $csvRows = collect([['الكلية', 'التقويم الذاتي %', 'حالة التقرير']])->merge($rows);
             $csv = "\xEF\xBB\xBF".$csvRows->map(fn ($row) => collect($row)->map(fn ($value) => '"'.str_replace('"', '""', (string) $value).'"')->implode(','))->implode("\r\n");
 
+            $this->audit($request, 'reports.summary_exported', ['format' => 'csv', 'cycle_id' => $cycle->id, 'university_id' => $university->id]);
+
             return response($csv, 200, [
                 'Content-Type' => 'text/csv; charset=UTF-8',
                 'Content-Disposition' => 'attachment; filename="quality-summary.csv"',
@@ -79,6 +85,8 @@ class PlatformReportController extends Controller
             'حالة التقييم الخارجي' => $external?->status ?? 'غير مكتمل',
             'قرار الاعتماد' => $decision?->decision_type ?? 'غير صادر',
         ], '<table><thead><tr><th>الكلية</th><th>التقويم الذاتي %</th><th>حالة التقرير</th></tr></thead><tbody>'.$tableRows.'</tbody></table>');
+
+        $this->audit($request, 'reports.summary_exported', ['format' => 'word', 'cycle_id' => $cycle->id, 'university_id' => $university->id]);
 
         return $this->wordResponse($html, 'quality-summary.doc');
     }
@@ -174,5 +182,16 @@ class PlatformReportController extends Controller
     private function assessmentStatus(string $status): string
     {
         return ['draft' => 'مسودة', 'submitted' => 'بانتظار مراجعة العميد', 'returned' => 'معاد للاستكمال', 'approved' => 'معتمد'][$status] ?? $status;
+    }
+
+    /** يسجل عمليات تنزيل التقارير لتبقى قابلة للمراجعة في سجل التدقيق. */
+    private function audit(Request $request, string $action, array $metadata = []): void
+    {
+        AuditLog::create([
+            'user_id' => $request->user()->id,
+            'action' => $action,
+            'metadata' => $metadata ?: null,
+            'ip_address' => $request->ip(),
+        ]);
     }
 }
