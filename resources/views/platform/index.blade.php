@@ -15,8 +15,9 @@
     <script>
         window.PLATFORM = @json($platformConfig);
     </script>
-    <script src="{{ asset('platform/js/data.js') }}"></script>
-    <script src="{{ asset('platform/js/core.js') }}"></script>
-    <script src="{{ asset('platform/js/app.js') }}"></script>
+    {{-- يغيّر رقم الإصدار مع تعديل الملف حتى لا يحتفظ المتصفح بنسخة قديمة من واجهة الدخول. --}}
+    <script src="{{ asset('platform/js/data.js') }}?v={{ filemtime(public_path('platform/js/data.js')) }}"></script>
+    <script src="{{ asset('platform/js/core.js') }}?v={{ filemtime(public_path('platform/js/core.js')) }}"></script>
+    <script src="{{ asset('platform/js/app.js') }}?v={{ filemtime(public_path('platform/js/app.js')) }}"></script>
 </body>
 </html>
