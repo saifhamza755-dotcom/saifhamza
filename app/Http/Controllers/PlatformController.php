@@ -56,6 +56,7 @@ class PlatformController extends Controller
                 'improvementUrl' => url('/platform/api/improvement-actions'),
                 'accreditationUrl' => url('/platform/api/accreditation-requests'),
                 'reportsUrl' => url('/platform/api/reports'),
+                'reportDownloadUrl' => url('/platform/api/reports/download'),
                 'activityUrl' => url('/platform/api/activity'),
                 'accountRequestsUrl' => url('/platform/api/account-requests'),
                 'passwordResetRequestsUrl' => url('/platform/api/password-reset-requests'),

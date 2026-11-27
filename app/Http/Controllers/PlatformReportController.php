@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccreditationDecision;
+use App\Models\College;
 use App\Models\EvaluationCycle;
 use App\Models\ExternalEvaluation;
 use App\Models\ImprovementAction;
@@ -10,9 +11,20 @@ use App\Models\ImprovementPlan;
 use App\Models\SelfAssessment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class PlatformReportController extends Controller
 {
+    /** ينشئ ملف Word من بيانات قاعدة البيانات الفعلية، وليس من تخزين المتصفح. */
+    public function download(Request $request, string $kind): Response
+    {
+        return match ($kind) {
+            'college' => $this->collegeDownload($request),
+            'external' => $this->externalDownload($request),
+            default => abort(404),
+        };
+    }
+
     public function index(Request $request): JsonResponse
     {
         $assignment = $request->user()->activeAssignments()->with('role')->firstOrFail();
@@ -34,5 +46,75 @@ class PlatformReportController extends Controller
         })->values();
 
         return response()->json(['rows' => $rows, 'summary' => ['universities' => $rows->pluck('universityId')->unique()->count(), 'approvedExternal' => $rows->where('externalStatus', 'approved')->count(), 'decisions' => $rows->where('decision', '!=', '')->count(), 'completedActions' => $rows->sum('completedActions'), 'actions' => $rows->sum('actions')]]);
+    }
+
+    /** يبني تقرير كلية خاصًا بصاحب التكليف الحالي فقط. */
+    private function collegeDownload(Request $request): Response
+    {
+        $assignment = $request->user()->activeAssignments()->with(['role', 'university', 'college'])->firstOrFail();
+        abort_unless(in_array($assignment->role->key, ['college', 'dean'], true), 403);
+        $assessment = SelfAssessment::with(['cycle', 'university', 'college', 'responses.indicator', 'responses.evidenceFiles'])
+            ->where('college_id', $assignment->college_id)
+            ->latest('updated_at')
+            ->firstOrFail();
+        $rows = $assessment->responses->map(fn ($response) => '<tr><td>'.$this->escape($response->indicator->name_ar).'</td><td>'.$this->escape($response->score ?? 'غير مقيم').'</td><td>'.$response->evidenceFiles->count().'</td></tr>')->implode('');
+        $html = $this->document('تقرير الكلية', [
+            'الجامعة' => $assessment->university->name_ar,
+            'الكلية' => $assessment->college->name_ar,
+            'دورة التقييم' => $assessment->cycle->name,
+            'حالة التقرير' => $this->assessmentStatus($assessment->status),
+        ], '<table><thead><tr><th>المؤشر</th><th>الدرجة من 4</th><th>عدد الأدلة</th></tr></thead><tbody>'.$rows.'</tbody></table><p>ملاحظات التقرير: '.$this->escape($assessment->report_notes ?: 'لا توجد ملاحظات').'</p>');
+
+        return $this->wordResponse($html, 'college-quality-report.doc');
+    }
+
+    /** يبني تقرير التقييم الخارجي للمقيم المكلف أو للإدارة المركزية. */
+    private function externalDownload(Request $request): Response
+    {
+        $assignment = $request->user()->activeAssignments()->with('role')->firstOrFail();
+        abort_unless(in_array($assignment->role->key, ['central', 'evaluator'], true), 403);
+        $query = ExternalEvaluation::with(['report.cycle', 'report.university', 'team.members', 'responses.indicator']);
+        if ($assignment->role->key === 'evaluator') {
+            $query->whereHas('team.members', fn ($members) => $members->whereKey($request->user()->id));
+        }
+        $evaluation = $query->latest('updated_at')->firstOrFail();
+        $collegeNames = College::whereIn('id', $evaluation->responses->pluck('college_id')->filter())->pluck('name_ar', 'id');
+        $rows = $evaluation->responses->map(fn ($response) => '<tr><td>'.$this->escape($collegeNames->get($response->college_id, '—')).'</td><td>'.$this->escape($response->indicator->name_ar).'</td><td>'.$this->escape($response->score ?? 'غير مقيم').'</td><td>'.$this->escape($response->notes ?? '—').'</td></tr>')->implode('');
+        $html = $this->document('تقرير التقييم الخارجي', [
+            'الجامعة' => $evaluation->report->university->name_ar,
+            'دورة التقييم' => $evaluation->report->cycle->name,
+            'حالة التقييم' => $evaluation->status,
+        ], '<table><thead><tr><th>الكلية</th><th>المؤشر</th><th>الدرجة</th><th>ملاحظة المقيم</th></tr></thead><tbody>'.$rows.'</tbody></table><h3>نقاط القوة</h3><p>'.$this->escape($evaluation->strengths ?: '—').'</p><h3>نقاط الضعف</h3><p>'.$this->escape($evaluation->weaknesses ?: '—').'</p><h3>التوصيات</h3><p>'.$this->escape($evaluation->recommendations ?: '—').'</p>');
+
+        return $this->wordResponse($html, 'external-evaluation-report.doc');
+    }
+
+    /** يلف محتوى التقرير بتنسيق HTML بسيط يفهمه Microsoft Word. */
+    private function document(string $title, array $details, string $body): string
+    {
+        $meta = collect($details)->map(fn ($value, $label) => '<p><strong>'.$this->escape($label).':</strong> '.$this->escape($value).'</p>')->implode('');
+
+        return '<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><style>body{font-family:Arial;padding:28px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #777;padding:8px;text-align:right}th{background:#eee}</style></head><body><h1>'.$this->escape($title).'</h1>'.$meta.$body.'</body></html>';
+    }
+
+    /** يرجع استجابة تنزيل Word آمنة باسم ملف ثابت. */
+    private function wordResponse(string $html, string $fileName): Response
+    {
+        return response("\xEF\xBB\xBF".$html, 200, [
+            'Content-Type' => 'application/msword; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /** يمنع إدخال HTML غير آمن من بيانات المستخدم داخل التقرير المصدر. */
+    private function escape(mixed $value): string
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    /** يحول حالة تقرير الكلية الداخلية إلى وصف عربي. */
+    private function assessmentStatus(string $status): string
+    {
+        return ['draft' => 'مسودة', 'submitted' => 'بانتظار مراجعة العميد', 'returned' => 'معاد للاستكمال', 'approved' => 'معتمد'][$status] ?? $status;
     }
 }

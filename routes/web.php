@@ -109,6 +109,7 @@ Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(
     Route::get('/improvement-actions', [PlatformImprovementController::class, 'index'])->name('improvement.index');
     Route::get('/accreditation-requests', [PlatformAccreditationController::class, 'index'])->name('accreditation.index');
     Route::get('/reports', [PlatformReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/download/{kind}', [PlatformReportController::class, 'download'])->name('reports.download');
     Route::get('/activity/notifications', [PlatformActivityController::class, 'notifications'])->name('activity.notifications');
     Route::patch('/activity/notifications/read-all', [PlatformActivityController::class, 'readAll'])->name('activity.notifications.read-all');
     Route::middleware('permission:audit.view')->get('/activity/audit', [PlatformActivityController::class, 'audit'])->name('activity.audit');

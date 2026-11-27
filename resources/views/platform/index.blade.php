@@ -17,7 +17,6 @@
     </script>
     <script src="{{ asset('platform/js/data.js') }}"></script>
     <script src="{{ asset('platform/js/core.js') }}"></script>
-    <script src="{{ asset('platform/js/role-reports.js') }}"></script>
     <script src="{{ asset('platform/js/app.js') }}"></script>
 </body>
 </html>
