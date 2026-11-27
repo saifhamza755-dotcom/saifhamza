@@ -9,6 +9,7 @@ use App\Models\ExternalEvaluation;
 use App\Models\ImprovementAction;
 use App\Models\ImprovementPlan;
 use App\Models\SelfAssessment;
+use App\Models\UniversityReport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -23,6 +24,63 @@ class PlatformReportController extends Controller
             'external' => $this->externalDownload($request),
             default => abort(404),
         };
+    }
+
+    /** ينشئ ملخص الجامعة للتصدير من السجلات المشتركة في قاعدة البيانات. */
+    public function summaryDownload(Request $request, string $format): Response
+    {
+        abort_unless(in_array($format, ['csv', 'word'], true), 404);
+        $assignment = $request->user()->activeAssignments()->with('role')->firstOrFail();
+        abort_unless(in_array($assignment->role->key, ['central', 'university'], true), 403);
+
+        $data = $request->validate([
+            'cycle_id' => ['required', 'integer'],
+            'university_id' => ['required', 'integer'],
+        ]);
+        abort_unless($assignment->role->key === 'central' || $assignment->university_id === (int) $data['university_id'], 403);
+
+        $cycle = EvaluationCycle::with('standardsVersion')->findOrFail($data['cycle_id']);
+        $university = $cycle->universities()->whereKey($data['university_id'])->firstOrFail();
+        $collegeIds = $cycle->colleges()->wherePivot('university_id', $university->id)->pluck('colleges.id');
+        $colleges = College::whereIn('id', $collegeIds)->orderBy('name_ar')->get();
+        $assessments = SelfAssessment::where('evaluation_cycle_id', $cycle->id)
+            ->where('university_id', $university->id)->whereIn('college_id', $collegeIds)->get()->keyBy('college_id');
+        $universityReport = UniversityReport::where([
+            'evaluation_cycle_id' => $cycle->id,
+            'university_id' => $university->id,
+        ])->latest()->first();
+        $external = $universityReport?->externalEvaluation;
+        $decision = AccreditationDecision::where([
+            'evaluation_cycle_id' => $cycle->id,
+            'university_id' => $university->id,
+        ])->latest('issued_at')->first();
+        $rows = $colleges->map(fn (College $college) => [
+            $college->name_ar,
+            $assessments->get($college->id)?->total_score ?? 'غير مكتمل',
+            $this->assessmentStatus($assessments->get($college->id)?->status ?? ''),
+        ]);
+
+        if ($format === 'csv') {
+            $csvRows = collect([['الكلية', 'التقويم الذاتي %', 'حالة التقرير']])->merge($rows);
+            $csv = "\xEF\xBB\xBF".$csvRows->map(fn ($row) => collect($row)->map(fn ($value) => '"'.str_replace('"', '""', (string) $value).'"')->implode(','))->implode("\r\n");
+
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="quality-summary.csv"',
+            ]);
+        }
+
+        $tableRows = $rows->map(fn ($row) => '<tr><td>'.$this->escape($row[0]).'</td><td>'.$this->escape($row[1]).'</td><td>'.$this->escape($row[2]).'</td></tr>')->implode('');
+        $html = $this->document('ملخص نتائج الجودة', [
+            'الجامعة' => $university->name_ar,
+            'دورة التقييم' => $cycle->name,
+            'نسخة المعايير' => $cycle->standardsVersion->name,
+            'حالة التقرير الجامعي' => $universityReport?->status ?? 'غير منشأ',
+            'حالة التقييم الخارجي' => $external?->status ?? 'غير مكتمل',
+            'قرار الاعتماد' => $decision?->decision_type ?? 'غير صادر',
+        ], '<table><thead><tr><th>الكلية</th><th>التقويم الذاتي %</th><th>حالة التقرير</th></tr></thead><tbody>'.$tableRows.'</tbody></table>');
+
+        return $this->wordResponse($html, 'quality-summary.doc');
     }
 
     public function index(Request $request): JsonResponse

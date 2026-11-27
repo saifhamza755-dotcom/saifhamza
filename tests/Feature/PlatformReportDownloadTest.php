@@ -130,4 +130,50 @@ class PlatformReportDownloadTest extends TestCase
             ->assertSee('قوة محفوظة على الخادم')
             ->assertSee('ملاحظة من قاعدة البيانات');
     }
+
+    public function test_central_downloads_university_summary_as_csv_from_server_data(): void
+    {
+        $central = User::where('username', 'central')->firstOrFail();
+        $university = University::where('code', 'SU')->firstOrFail();
+        $college = College::where('code', 'ENG')->firstOrFail();
+        $cycle = EvaluationCycle::create([
+            'name' => 'دورة ملخص الجودة',
+            'code' => 'SUMMARY-DOWNLOAD-2027',
+            'starts_on' => '2027-01-01',
+            'ends_on' => '2027-12-31',
+            'status' => 'open',
+            'standards_version_id' => StandardsVersion::where('status', 'active')->value('id'),
+            'created_by' => $central->id,
+        ]);
+        $cycle->universities()->attach($university->id);
+        $cycle->colleges()->attach($college->id, ['university_id' => $university->id]);
+        SelfAssessment::create([
+            'evaluation_cycle_id' => $cycle->id,
+            'university_id' => $university->id,
+            'college_id' => $college->id,
+            'status' => 'approved',
+            'total_score' => 87.5,
+            'created_by' => User::where('username', 'college')->value('id'),
+        ]);
+        UniversityReport::create([
+            'evaluation_cycle_id' => $cycle->id,
+            'university_id' => $university->id,
+            'status' => 'approved',
+            'overall_score' => 87.5,
+            'college_count' => 1,
+            'standards_snapshot' => [],
+            'prepared_by' => $central->id,
+        ]);
+
+        $this->actingAs($central)
+            ->get(route('platform.api.reports.summary-download', [
+                'format' => 'csv',
+                'cycle_id' => $cycle->id,
+                'university_id' => $university->id,
+            ]))
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8')
+            ->assertHeader('content-disposition', 'attachment; filename="quality-summary.csv"')
+            ->assertSee('87.5');
+    }
 }
