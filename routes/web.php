@@ -32,6 +32,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
+// نقطة دخول الواجهة العربية؛ تجهز بيانات الجلسة وروابط API للمتصفح.
 Route::get('/', PlatformController::class)->name('platform');
 Route::post('/platform/session', [PlatformSessionController::class, 'store'])
     ->withoutMiddleware([ValidateCsrfToken::class])
@@ -41,6 +42,7 @@ Route::delete('/platform/session', [PlatformSessionController::class, 'destroy']
     ->name('platform.session.destroy');
 Route::get('/platform/logout', [PlatformSessionController::class, 'destroyPage'])->name('platform.session.destroy-page');
 
+// جميع الروابط التالية API داخلية ولا تعمل إلا بعد تسجيل الدخول.
 Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(function () {
     Route::put('/profile', [PlatformProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [PlatformProfileController::class, 'updatePassword'])->name('profile.password');
@@ -50,6 +52,7 @@ Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(
     Route::get('/account-requests', [PlatformAccountRequestController::class, 'index'])->name('account-requests.index');
     Route::get('/password-reset-requests', [PlatformPasswordResetRequestController::class, 'index'])->name('password-reset-requests.index');
     Route::get('/directory', [PlatformDirectoryController::class, 'index'])->name('directory');
+    // عمليات الهوية الحساسة: الحسابات وكلمات المرور والتكليفات.
     Route::middleware('permission:users.manage')->group(function () {
         Route::post('/account-requests/{accountRequest}/approve', [PlatformAccountRequestController::class, 'approve'])->name('account-requests.approve');
         Route::post('/account-requests/{accountRequest}/reject', [PlatformAccountRequestController::class, 'reject'])->name('account-requests.reject');
@@ -62,6 +65,7 @@ Route::middleware('auth')->prefix('platform/api')->name('platform.api.')->group(
         Route::post('/users/{user}/assignments', [PlatformDirectoryController::class, 'storeAssignment'])->name('users.assignments.store');
         Route::patch('/users/{user}/assignments/{assignment}/status', [PlatformDirectoryController::class, 'updateAssignmentStatus'])->name('users.assignments.status');
     });
+    // إدارة الهيكل المؤسسي وتعيين مسؤولي الجودة في نطاق الجامعة.
     Route::middleware('permission:institutions.manage')->group(function () {
         Route::post('/institutions', [PlatformDirectoryController::class, 'storeInstitution'])->name('institutions.store');
         Route::put('/institutions/{type}/{id}', [PlatformDirectoryController::class, 'updateInstitution'])->name('institutions.update');

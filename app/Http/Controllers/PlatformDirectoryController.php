@@ -19,6 +19,7 @@ use Illuminate\Validation\ValidationException;
 
 class PlatformDirectoryController extends Controller
 {
+    /** يجلب الهيكل المؤسسي والمستخدمين المرئيين حسب صلاحية المستخدم الحالي. */
     public function index(Request $request): JsonResponse
     {
         $assignment = $request->user()->activeAssignments()->with('role')->firstOrFail();
@@ -53,6 +54,7 @@ class PlatformDirectoryController extends Controller
         ]);
     }
 
+    /** ينشئ حسابًا جديدًا مع أول تكليف نشط وكلمة مرور مؤقتة. */
     public function storeUser(Request $request): JsonResponse
     {
         $data = $this->validateUser($request);
@@ -77,6 +79,7 @@ class PlatformDirectoryController extends Controller
         return response()->json(['user' => $this->userData($user->load('activeAssignments.role'))], 201);
     }
 
+    /** يعدل بيانات الحساب والتكليف المعروض دون حذف التكليفات الأخرى للمستخدم. */
     public function updateUser(Request $request, User $user): JsonResponse
     {
         $data = $this->validateUser($request, $user);
@@ -103,6 +106,7 @@ class PlatformDirectoryController extends Controller
         return response()->json(['user' => $this->userData($user->load('activeAssignments.role'))]);
     }
 
+    /** يضيف دورًا أو نطاقًا إضافيًا للمستخدم مع منع التكرار. */
     public function storeAssignment(Request $request, User $user): JsonResponse
     {
         $data = $request->validate([
@@ -136,6 +140,7 @@ class PlatformDirectoryController extends Controller
         return response()->json(['user' => $this->userData($user->load(['assignments.role', 'assignments.university', 'assignments.college']))], 201);
     }
 
+    /** يفعل أو يعطل تكليفًا مع حماية آخر تكليف نشط وتكليف المسؤول الرئيسي. */
     public function updateAssignmentStatus(Request $request, User $user, UserAssignment $assignment): JsonResponse
     {
         abort_unless($assignment->user_id === $user->id, 404);
@@ -172,6 +177,7 @@ class PlatformDirectoryController extends Controller
         return response()->json(['user' => $this->userData($user->load('activeAssignments.role'))]);
     }
 
+    /** يحدد كلية مسؤول الجودة بواسطة مسؤول الجامعة ويحفظها في قاعدة البيانات. */
     public function assignCollegeQualityManager(Request $request, User $user): JsonResponse
     {
         $data = $request->validate([
@@ -212,6 +218,7 @@ class PlatformDirectoryController extends Controller
         return response()->json(['message' => 'تم تعيين كلمة المرور المؤقتة.']);
     }
 
+    /** ينشئ جامعة أو عنصرًا تابعًا لها بعد التحقق من نطاق صاحب العملية. */
     public function storeInstitution(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -239,6 +246,7 @@ class PlatformDirectoryController extends Controller
         return response()->json(['message' => 'تمت إضافة العنصر إلى الهيكل المؤسسي.'], 201);
     }
 
+    /** يعدل اسم ورمز عنصر مؤسسي ويتحقق من عدم تكرار الرمز داخل نطاقه. */
     public function updateInstitution(Request $request, string $type, int $id): JsonResponse
     {
         $data = $request->validate([
@@ -267,6 +275,7 @@ class PlatformDirectoryController extends Controller
         ]);
     }
 
+    /** يحول معرفات الواجهة إلى أرقام ويتأكد أن نطاق الدور (منصة/جامعة/كلية) صحيح. */
     private function validatedScope(Role $role, array $data): array
     {
         $universityId = $this->numericId($data['universityId'] ?? null, 'u');
@@ -287,6 +296,7 @@ class PlatformDirectoryController extends Controller
         return [$universityId, $role->scope === 'university' ? null : $collegeId];
     }
 
+    /** يبني بيانات مستخدم وتكليفاته بالشكل المطلوب للواجهة دون كشف كلمة المرور. */
     private function userData(User $user, mixed $selectedAssignmentId = null): array
     {
         $assignments = $user->relationLoaded('assignments')
@@ -394,6 +404,7 @@ class PlatformDirectoryController extends Controller
         };
     }
 
+    /** يمنع تكرار الرمز داخل الجامعة أو الكلية أو القسم المناسب. */
     private function assertUniqueInstitutionCode(Model $entity, string $code): void
     {
         $exists = match (true) {

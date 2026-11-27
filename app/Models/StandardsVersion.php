@@ -30,6 +30,7 @@ class StandardsVersion extends Model
         return $this->hasMany(EvaluationCycle::class);
     }
 
+    /** الإصدار لا يقبل التعديل إلا وهو مسودة وغير مرتبط بدورة تقييم. */
     public function isEditable(): bool
     {
         return $this->status === 'draft' && ! $this->cycles()->exists();

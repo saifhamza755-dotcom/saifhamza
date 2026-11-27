@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureRole
 {
     /**
-     * Handle an incoming request.
+     * يسمح بمتابعة الطلب فقط إن كان دور الجلسة الحالي من الأدوار المطلوبة.
      *
      * @param  Closure(Request): (Response)  $next
      */

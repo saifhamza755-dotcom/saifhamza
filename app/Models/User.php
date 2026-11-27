@@ -55,11 +55,13 @@ class User extends Authenticatable
         ];
     }
 
+    /** يعيد كل التكليفات المرتبطة بالمستخدم، سواء كانت نشطة أو معطلة. */
     public function assignments(): HasMany
     {
         return $this->hasMany(UserAssignment::class);
     }
 
+    /** يعيد التكليفات المتاحة الآن ويرتب التكليف المختار في الجلسة أولًا. */
     public function activeAssignments(): HasMany
     {
         $assignments = $this->assignments()
@@ -88,6 +90,7 @@ class User extends Authenticatable
         return $this->hasMany(AppNotification::class);
     }
 
+    /** يتحقق من أن الدور المطلوب هو دور التكليف الفعّال، لا أي تكليف قديم للمستخدم. */
     public function hasRole(string ...$roles): bool
     {
         $assignments = $this->activeAssignments();
@@ -100,6 +103,7 @@ class User extends Authenticatable
             ->exists();
     }
 
+    /** يتحقق من صلاحية الدور الفعّال قبل تنفيذ أي عملية محمية. */
     public function hasPermission(string $permission): bool
     {
         $assignments = $this->activeAssignments();
@@ -112,6 +116,7 @@ class User extends Authenticatable
             ->exists();
     }
 
+    /** يتأكد أن رقم التكليف المخزن في الجلسة يخص المستخدم وما زال نشطًا. */
     private function ownedSelectedAssignmentId(): ?int
     {
         $assignmentId = $this->selectedAssignmentId();
@@ -124,6 +129,7 @@ class User extends Authenticatable
             : null;
     }
 
+    /** يقرأ رقم التكليف الذي اختاره المستخدم من جلسة Laravel الحالية. */
     private function selectedAssignmentId(): ?int
     {
         if (! app()->bound('request') || ! request()->hasSession()) {

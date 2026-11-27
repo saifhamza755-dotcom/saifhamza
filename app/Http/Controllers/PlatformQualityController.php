@@ -16,6 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class PlatformQualityController extends Controller
 {
+    /** يعيد إصدارات المعايير ودورات التقييم التي يحتاجها المستخدم في واجهة المنصة. */
     public function index(Request $request): JsonResponse
     {
         $versions = StandardsVersion::with('standards.indicators')->orderByDesc('id')->get();
@@ -34,6 +35,7 @@ class PlatformQualityController extends Controller
         ]);
     }
 
+    /** ينشئ إصدارًا جديدًا للمعايير، ويمكن نسخه من إصدار سابق. */
     public function storeVersion(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -110,6 +112,7 @@ class PlatformQualityController extends Controller
         return response()->json(['indicator' => $indicator]);
     }
 
+    /** يعتمد إصدار المعايير فقط عندما تساوي أوزان معاييره ومؤشراته 100%. */
     public function activateVersion(Request $request, StandardsVersion $version): JsonResponse
     {
         $this->ensureEditable($version);
@@ -129,6 +132,7 @@ class PlatformQualityController extends Controller
         return response()->json(['message' => 'تم اعتماد إصدار المعايير.']);
     }
 
+    /** ينشئ دورة تقييم ويثبت الجامعات والكليات المشاركة فيها وقت الإنشاء. */
     public function storeCycle(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -167,6 +171,7 @@ class PlatformQualityController extends Controller
         return response()->json(['cycle' => $this->cycleData($cycle->load(['standardsVersion.standards.indicators', 'universities', 'colleges']))], 201);
     }
 
+    /** ينقل دورة التقييم بين المسودة والفتح والإغلاق وفق انتقالات آمنة. */
     public function updateCycleStatus(Request $request, EvaluationCycle $cycle): JsonResponse
     {
         $data = $request->validate(['status' => ['required', Rule::in(['open', 'closed'])]]);

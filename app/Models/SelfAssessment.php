@@ -53,6 +53,7 @@ class SelfAssessment extends Model
         return $this->hasMany(AssessmentResponse::class);
     }
 
+    /** يحدد هل ما زال تقرير الكلية يسمح بالتعديل بحسب حالته وحالة دورة التقييم. */
     public function isEditable(): bool
     {
         return in_array($this->status, ['draft', 'returned'], true) && $this->cycle->status === 'open';

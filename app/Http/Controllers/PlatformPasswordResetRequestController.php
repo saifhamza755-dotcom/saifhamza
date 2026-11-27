@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class PlatformPasswordResetRequestController extends Controller
 {
+    /** ينشئ طلب استعادة وصول من الصفحة العامة دون كشف وجود الحساب للزائر. */
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -40,6 +41,7 @@ class PlatformPasswordResetRequestController extends Controller
         ]);
     }
 
+    /** يعين كلمة مرور مؤقتة بعد التحقق الإداري من هوية صاحب الطلب. */
     public function process(Request $request, PasswordResetRequest $passwordResetRequest): JsonResponse
     {
         $data = $request->validate([
@@ -82,6 +84,7 @@ class PlatformPasswordResetRequestController extends Controller
         ]);
     }
 
+    /** يحفظ رفض طلب استعادة الوصول مع الملاحظة التفسيرية. */
     public function reject(Request $request, PasswordResetRequest $passwordResetRequest): JsonResponse
     {
         $data = $request->validate([

@@ -37,6 +37,7 @@ class ImprovementAction extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    /** يعيد true عندما يتجاوز الإجراء موعده ولم يصل إلى إنجاز كامل. */
     public function isOverdue(): bool
     {
         return $this->status !== 'completed' && $this->due_on->isPast();

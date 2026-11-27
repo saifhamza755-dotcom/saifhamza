@@ -1,10 +1,14 @@
-/* Domain rules for the local demonstration. Production must enforce these on a server. */
+/*
+ * قواعد نموذج العرض المحلي. في النسخة المنشورة لا تعد هذه القواعد مصدر الحقيقة؛
+ * فالتحقق والحفظ النهائيان يتمان في Controllers الخاصة بـ Laravel وقاعدة MySQL.
+ */
 (function(root){
 'use strict';
 const cp=x=>JSON.parse(JSON.stringify(x)), id=()=> 'q'+Date.now().toString(36)+Math.random().toString(36).slice(2,9), now=()=>new Date().toISOString();
 function need(ok,msg){if(!ok)throw Error(msg);}
 const menus={admin:['dashboard','users','requests','roles','settings','audit','notifications','profile'],central:['dashboard','institutions','standards','cycles','university-report','evaluators','teams','visits','external-report','gaps','improvement','accreditation','reports','notifications','profile'],university:['dashboard','institutions','assignments','college-report','university-report','gaps','improvement','accreditation','reports','notifications','profile'],college:['dashboard','standards','self','evidence','college-report','improvement','notifications','profile'],dean:['dashboard','evidence','college-report','notifications','profile'],evaluator:['dashboard','university-report','evidence','teams','visits','external','external-report','notifications','profile']};
 function canAccessRoute(u,route){return Boolean(u?.active&&menus[u.role]?.includes(route));}
+// ينشئ بيانات تجريبية للعرض الأولي أو النسخة الاحتياطية المحلية فقط.
 function create(seed){
  const baseStandards=cp(seed.standards).map(({id,name,weight})=>({id:String(id),name,weight}));
  const baseIndicators=cp(seed.indicators).map(i=>({...i,standardId:String(i.standardId),requirement:'وثيقة داعمة للمؤشر'}));

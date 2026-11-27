@@ -26,6 +26,7 @@ class PlatformExternalEvaluationController extends Controller
         return response()->json(['evaluations' => $query->latest()->get()->map(fn (ExternalEvaluation $evaluation) => $this->data($evaluation, $request))]);
     }
 
+    /** يربط تقرير الجامعة بفريق تقييم خارجي بعد تحقق الإدارة المركزية من نطاقه. */
     public function assign(Request $request, UniversityReport $report): JsonResponse
     {
         $this->central($request);
@@ -47,6 +48,7 @@ class PlatformExternalEvaluationController extends Controller
         return response()->json(['evaluation' => $this->data($evaluation->load(['report.cycle.standardsVersion.standards.indicators', 'report.cycle.colleges', 'team.members', 'responses']), $request)], 201);
     }
 
+    /** يحفظ درجات المقيمين للمؤشرات الخاصة بكل كلية مشاركة. */
     public function saveScores(Request $request, ExternalEvaluation $evaluation): JsonResponse
     {
         $this->evaluator($request, $evaluation);
@@ -84,6 +86,7 @@ class PlatformExternalEvaluationController extends Controller
         return response()->json(['evaluation' => $this->data($evaluation->fresh()->load(['report.cycle.standardsVersion.standards.indicators', 'report.cycle.colleges', 'team.members', 'responses']), $request)]);
     }
 
+    /** يرسل التقرير الخارجي للإدارة المركزية بعد اكتمال الدرجات والنصوص. */
     public function submit(Request $request, ExternalEvaluation $evaluation): JsonResponse
     {
         $this->evaluator($request, $evaluation);
@@ -99,6 +102,7 @@ class PlatformExternalEvaluationController extends Controller
         return response()->json(['evaluation' => $this->data($evaluation->fresh()->load(['report.cycle.standardsVersion.standards.indicators', 'report.cycle.colleges', 'team.members', 'responses']), $request)]);
     }
 
+    /** تعتمد الإدارة المركزية التقييم الخارجي أو تعيده للفريق للاستكمال. */
     public function decide(Request $request, ExternalEvaluation $evaluation): JsonResponse
     {
         $this->central($request);

@@ -15,6 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class PlatformAccountRequestController extends Controller
 {
+    /** يستقبل طلب حساب من الزائر ويحفظه للمراجعة الإدارية. */
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -41,6 +42,7 @@ class PlatformAccountRequestController extends Controller
         ]);
     }
 
+    /** يعتمد طلب الحساب وينشئ المستخدم والتكليف وكلمة المرور المؤقتة في معاملة واحدة. */
     public function approve(Request $request, AccountRequest $accountRequest): JsonResponse
     {
         $data = $request->validate([
@@ -99,6 +101,7 @@ class PlatformAccountRequestController extends Controller
         ]);
     }
 
+    /** يرفض طلب الحساب مع حفظ سبب الرفض في قاعدة البيانات وسجل التدقيق. */
     public function reject(Request $request, AccountRequest $accountRequest): JsonResponse
     {
         $data = $request->validate(['reviewNote' => ['required', 'string', 'max:5000']]);

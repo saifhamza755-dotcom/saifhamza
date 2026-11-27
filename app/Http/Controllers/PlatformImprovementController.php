@@ -14,6 +14,7 @@ use Illuminate\Validation\Rule;
 
 class PlatformImprovementController extends Controller
 {
+    /** يعيد إجراءات التحسين التي تقع ضمن نطاق المستخدم الحالي. */
     public function index(Request $request): JsonResponse
     {
         $assignment = $request->user()->activeAssignments()->with('role')->firstOrFail();
@@ -29,6 +30,7 @@ class PlatformImprovementController extends Controller
         return response()->json(['actions' => $plans->get()->flatMap(fn (ImprovementPlan $plan) => $plan->actions->map(fn (ImprovementAction $action) => $this->actionData($action, $plan)))->values()]);
     }
 
+    /** ينشئ إجراء تحسين مرتبطًا بنتيجة تقرير أو فجوة ضمن دورة محددة. */
     public function store(Request $request): JsonResponse
     {
         $assignment = $this->owner($request);
@@ -67,6 +69,7 @@ class PlatformImprovementController extends Controller
         return response()->json(['action' => $this->actionData($action, $plan)], 201);
     }
 
+    /** يحدث نسبة الإنجاز والملاحظات لإجراء تحسين مع التحقق من مالكه ونطاقه. */
     public function update(Request $request, ImprovementAction $action): JsonResponse
     {
         $action->load('plan');

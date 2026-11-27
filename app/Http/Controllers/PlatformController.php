@@ -7,6 +7,7 @@ use Illuminate\View\View;
 
 class PlatformController extends Controller
 {
+    /** يبني صفحة المنصة ويحقن إعدادات JavaScript وبيانات التكليف الفعّال. */
     public function __invoke(Request $request): View
     {
         $user = $request->user();

@@ -1,4 +1,5 @@
 (()=>{'use strict';
+// هذا الملف مسؤول عن الواجهة العربية التفاعلية فقط؛ الحفظ الحقيقي يتم عبر Laravel API.
 const Q=window.QA,seed=window.APP_SEED,app=document.getElementById('app'),platform=window.PLATFORM||{},KEY='YemenQA_document_v3',SESSION=KEY+'_session';
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||Q.create(seed);}catch(e){state=Q.create(seed);}
 const freshVersions=Q.create(seed).versions;
@@ -6,6 +7,7 @@ if(!Array.isArray(state.versions)) state.versions=[];
 freshVersions.forEach(v=>{if(!state.versions.some(old=>old.id===v.id))state.versions.push(v);});
 state.schema=4;
 localStorage.setItem(KEY,JSON.stringify(state));
+// يدمج بيانات المستخدم التي أعادها الخادم مع النسخة المؤقتة للواجهة.
 function sessionUser(remote){
  if(!remote)return null;
  let local=state.users.find(x=>x.username.toLowerCase()===remote.username.toLowerCase());
@@ -30,6 +32,7 @@ window.fetch=async(...args)=>{
  }
  return response;
 };
+// بوابة موحدة لطلبات JSON: تضيف رمز CSRF وتحول أخطاء Laravel إلى رسالة عربية.
 async function api(url,options={}){
  await latestLoginTokenPromise;
  const response=await fetch(url,{...options,credentials:'same-origin',headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':platform.csrfToken,...(options.headers||{})}});
@@ -43,6 +46,7 @@ async function apiForm(url,formData){
  if(!response.ok)throw Error(payload.message||Object.values(payload.errors||{})[0]?.[0]||'تعذر رفع الملف إلى الخادم');
  return payload;
 }
+// يجلب المستخدمين والهيكل المؤسسي الأحدث بعد أي تعديل إداري.
 async function refreshDirectory(){
  const payload=await api(platform.directoryUrl);
  if(Array.isArray(payload.institutions))state.institutions=payload.institutions;

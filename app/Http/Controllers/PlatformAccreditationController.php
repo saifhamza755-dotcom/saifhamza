@@ -27,6 +27,7 @@ class PlatformAccreditationController extends Controller
         return response()->json(['requests' => $query->get()->map(fn (AccreditationRequest $item) => $this->data($item))]);
     }
 
+    /** ينشئ طلب اعتماد بعد اكتمال التقييم الخارجي وخطة التحسين المطلوبة. */
     public function submit(Request $request, ExternalEvaluation $evaluation): JsonResponse
     {
         $assignment = $request->user()->activeAssignments()->with('role')->firstOrFail();
@@ -44,6 +45,7 @@ class PlatformAccreditationController extends Controller
         return response()->json(['request' => $this->data($item->fresh()->load(['evaluation.report', 'university']))], 201);
     }
 
+    /** يسجل قرار الاعتماد النهائي وأسبابه وشروطه إن وجدت. */
     public function decide(Request $request, AccreditationRequest $item): JsonResponse
     {
         abort_unless($request->user()->hasRole('central'), 403);

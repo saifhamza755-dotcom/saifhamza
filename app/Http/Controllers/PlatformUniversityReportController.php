@@ -27,6 +27,7 @@ class PlatformUniversityReportController extends Controller
         return response()->json(['reports' => $query->get()->map(fn (UniversityReport $report) => $this->reportData($report))]);
     }
 
+    /** يجمع التقويمات المعتمدة للكليات ويولد مسودة تقرير جامعي موزون. */
     public function generate(Request $request, EvaluationCycle $cycle): JsonResponse
     {
         $assignment = $this->universityAssignment($request);
@@ -41,6 +42,7 @@ class PlatformUniversityReportController extends Controller
         return response()->json(['report' => $this->reportData($report->fresh()->load(['cycle', 'university']))], 201);
     }
 
+    /** يحفظ الملخص التنفيذي والتوصيات للتقرير الجامعي القابل للتعديل. */
     public function save(Request $request, UniversityReport $report): JsonResponse
     {
         $assignment = $this->universityAssignment($request);
@@ -56,6 +58,7 @@ class PlatformUniversityReportController extends Controller
         return response()->json(['report' => $this->reportData($report->fresh()->load(['cycle', 'university']))]);
     }
 
+    /** يرسل التقرير الجامعي للإدارة المركزية بعد التحقق من اكتمال حقوله. */
     public function submit(Request $request, UniversityReport $report): JsonResponse
     {
         $assignment = $this->universityAssignment($request);
@@ -75,6 +78,7 @@ class PlatformUniversityReportController extends Controller
         return response()->json(['report' => $this->reportData($report->fresh()->load(['cycle', 'university']))]);
     }
 
+    /** تسجل الإدارة المركزية قرار اعتماد التقرير أو إعادته مع ملاحظاتها. */
     public function decide(Request $request, UniversityReport $report): JsonResponse
     {
         abort_unless($request->user()->hasRole('central'), 403);
@@ -93,6 +97,7 @@ class PlatformUniversityReportController extends Controller
         return response()->json(['report' => $this->reportData($report->fresh()->load(['cycle', 'university']))]);
     }
 
+    /** يحسب النتيجة المجمعة للجامعة من تقارير الكليات المعتمدة فقط. */
     private function aggregate(EvaluationCycle $cycle, int $universityId): array
     {
         $collegeIds = $cycle->colleges()->wherePivot('university_id', $universityId)->pluck('colleges.id');

@@ -18,6 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class PlatformAssessmentController extends Controller
 {
+    /** يعيد التقويمات المسموح للمستخدم برؤيتها حسب دوره ونطاق تكليفه. */
     public function index(Request $request): JsonResponse
     {
         $assignment = $request->user()->activeAssignments()->with('role')->firstOrFail();
@@ -37,6 +38,7 @@ class PlatformAssessmentController extends Controller
         return response()->json(['assessments' => $query->get()->map(fn (SelfAssessment $assessment) => $this->assessmentData($assessment))]);
     }
 
+    /** ينشئ تقويمًا ذاتيًا للكلية في دورة مفتوحة ويولد استجابات المؤشرات الناقصة. */
     public function start(Request $request, EvaluationCycle $cycle): JsonResponse
     {
         $assignment = $this->collegeAssignment($request, 'college');
@@ -53,6 +55,7 @@ class PlatformAssessmentController extends Controller
         return response()->json(['assessment' => $this->assessmentData($assessment->fresh()->load($this->relations()))], 201);
     }
 
+    /** يحفظ الدرجات والتعليقات ويعيد احتساب النتيجة الموزونة للتقويم. */
     public function save(Request $request, SelfAssessment $assessment): JsonResponse
     {
         $this->authorizeCollege($request, $assessment, 'college');
@@ -82,6 +85,7 @@ class PlatformAssessmentController extends Controller
         return response()->json(['assessment' => $this->assessmentData($assessment->fresh()->load($this->relations()))]);
     }
 
+    /** يرسل التقرير للعميد بعد التأكد من اكتمال الدرجات والأدلة المطلوبة. */
     public function submit(Request $request, SelfAssessment $assessment): JsonResponse
     {
         $this->authorizeCollege($request, $assessment, 'college');
@@ -108,6 +112,7 @@ class PlatformAssessmentController extends Controller
         return response()->json(['assessment' => $this->assessmentData($assessment->fresh()->load($this->relations()))]);
     }
 
+    /** يرفع دليلًا حقيقيًا إلى التخزين الخاص ويربطه باستجابة مؤشر محدد. */
     public function uploadEvidence(Request $request, AssessmentResponse $response): JsonResponse
     {
         $response->load('assessment.cycle');
@@ -144,6 +149,7 @@ class PlatformAssessmentController extends Controller
         return response()->json(['message' => 'تم حذف الدليل.']);
     }
 
+    /** يسمح للعميد باعتماد الدليل أو إعادته مع ملاحظة توضح المطلوب. */
     public function reviewEvidence(Request $request, EvidenceFile $evidence): JsonResponse
     {
         $evidence->load('response.assessment');
@@ -162,6 +168,7 @@ class PlatformAssessmentController extends Controller
         return response()->json(['message' => 'تمت مراجعة الدليل.']);
     }
 
+    /** يسجل قرار العميد على تقرير الكلية بعد التحقق من حالة الأدلة. */
     public function decide(Request $request, SelfAssessment $assessment): JsonResponse
     {
         $this->authorizeCollege($request, $assessment, 'dean');
@@ -187,6 +194,7 @@ class PlatformAssessmentController extends Controller
         return response()->json(['assessment' => $this->assessmentData($assessment->fresh()->load($this->relations()))]);
     }
 
+    /** يعيد مسؤول الجامعة تقرير كلية معتمدًا للاستكمال قبل إرسال التقرير الجامعي. */
     public function reopen(Request $request, SelfAssessment $assessment): JsonResponse
     {
         $assignment = $request->user()->activeAssignments()
@@ -223,6 +231,7 @@ class PlatformAssessmentController extends Controller
         return response()->json(['assessment' => $this->assessmentData($assessment->fresh()->load($this->relations()))]);
     }
 
+    /** يبسط نموذج التقويم إلى JSON عربي تفهمه واجهة المنصة. */
     private function assessmentData(SelfAssessment $assessment): array
     {
         $statuses = ['draft' => 'مسودة', 'submitted' => 'بانتظار مراجعة العميد', 'returned' => 'معاد للاستكمال', 'approved' => 'معتمد'];
@@ -280,6 +289,7 @@ class PlatformAssessmentController extends Controller
         return $assessment->cycle->standardsVersion->standards->flatMap->indicators->pluck('id')->map(fn ($id) => (int) $id)->all();
     }
 
+    /** يحسب الدرجة النهائية باستخدام وزن المعيار ووزن المؤشر والدرجة من أربعة. */
     private function calculateTotal(SelfAssessment $assessment): float
     {
         $assessment->loadMissing(['cycle.standardsVersion.standards.indicators', 'responses']);
@@ -301,6 +311,7 @@ class PlatformAssessmentController extends Controller
             ->whereNotNull('college_id')->firstOrFail();
     }
 
+    /** يمنع أي كلية أو عميد من التعامل مع تقرير كلية مختلفة. */
     private function authorizeCollege(Request $request, SelfAssessment $assessment, string $role): void
     {
         abort_unless($this->collegeAssignment($request, $role)->college_id === $assessment->college_id, 403);

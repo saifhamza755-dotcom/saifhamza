@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 
 class NotificationService
 {
+    /** ينشئ إشعارًا منفصلًا لكل مستلم مع رابط اختياري للمعاملة المرتبطة. */
     public function send(User|Collection $recipients, string $title, string $body, ?string $routeName = null, array $parameters = []): void
     {
         $users = $recipients instanceof User ? collect([$recipients]) : $recipients;
@@ -19,6 +20,7 @@ class NotificationService
         }
     }
 
+    /** يعيد المستخدمين النشطين الذين يحملون دورًا محددًا ضمن جامعة أو كلية عند الحاجة. */
     public function usersWithRole(string $role, ?int $universityId = null, ?int $collegeId = null): Collection
     {
         return User::where('active', true)->whereHas('activeAssignments', function ($query) use ($role, $universityId, $collegeId) {

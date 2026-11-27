@@ -46,6 +46,7 @@ class AccreditationDecision extends Model
         return $this->belongsTo(User::class, 'revoked_by');
     }
 
+    /** يحول حالة قرار الاعتماد الداخلية إلى وصف عربي مناسب للواجهة. */
     public function displayStatus(): string
     {
         if ($this->status === 'revoked') {

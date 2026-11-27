@@ -10,6 +10,7 @@ use Illuminate\Validation\Rule;
 
 class PlatformProfileController extends Controller
 {
+    /** يحدث الاسم والبريد والهاتف للحساب الحالي مع منع تكرار البريد. */
     public function update(Request $request): JsonResponse
     {
         /** @var User $user */
@@ -29,6 +30,7 @@ class PlatformProfileController extends Controller
         ]);
     }
 
+    /** يغير كلمة المرور بعد التحقق من الحالية ويلغي حالة كلمة المرور المؤقتة. */
     public function updatePassword(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -50,6 +52,7 @@ class PlatformProfileController extends Controller
         ]);
     }
 
+    /** يبدل التكليف الفعّال في الجلسة ليطبق الدور والنطاق الجديدان فورًا. */
     public function selectAssignment(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -68,6 +71,7 @@ class PlatformProfileController extends Controller
         ]);
     }
 
+    /** يحول بيانات المستخدم وتكليفاته إلى الصيغة التي تحتاجها واجهة JavaScript. */
     private function userData(User $user): array
     {
         $assignments = $user->activeAssignments()->with(['role', 'university', 'college'])->get();
@@ -95,6 +99,7 @@ class PlatformProfileController extends Controller
         ];
     }
 
+    /** يسجل العملية الحساسة في سجل التدقيق مع المستخدم وعنوان الشبكة. */
     private function audit(Request $request, string $action, User $user): void
     {
         AuditLog::create([

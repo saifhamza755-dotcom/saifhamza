@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsurePermission
 {
     /**
-     * Handle an incoming request.
+     * يحمي الرابط عبر التحقق من صلاحية الدور الفعّال للمستخدم قبل متابعة الطلب.
      *
      * @param  Closure(Request): (Response)  $next
      */

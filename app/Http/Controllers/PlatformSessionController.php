@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class PlatformSessionController extends Controller
 {
+    /** يتحقق من بيانات الدخول وينشئ جلسة آمنة ويختار أول تكليف نشط للمستخدم. */
     public function store(Request $request): JsonResponse
     {
         $credentials = $request->validate([
@@ -80,6 +81,7 @@ class PlatformSessionController extends Controller
         ]);
     }
 
+    /** ينهي جلسة API الحالية ويزيل بيانات المصادقة من Laravel. */
     public function destroy(Request $request): JsonResponse
     {
         if ($request->user()) {
@@ -98,6 +100,7 @@ class PlatformSessionController extends Controller
         return response()->json(['message' => 'تم تسجيل الخروج.']);
     }
 
+    /** ينهي الجلسة ثم يعيد المتصفح إلى الصفحة الرئيسية للمنصة. */
     public function destroyPage(Request $request): RedirectResponse
     {
         if ($request->user()) {
